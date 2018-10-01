@@ -1,7 +1,7 @@
 ---
 title: "R Club - Lesson 1"
-author: "Kenji Sato"
-date: '2018/10/3 & 10'
+author: Kenji Sato
+date: 2018/10/3 & 10  
 output:
   xaringan::moon_reader:
     mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
@@ -15,7 +15,7 @@ output:
     pandoc_args: [
       "--include-before-body", "../asset/mathjax-macro.md"
     ]
-subtitle: R / RStudio / RScript
+subtitle: http://s.opur.club/18d1
 header-includes: 
     - <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
 
