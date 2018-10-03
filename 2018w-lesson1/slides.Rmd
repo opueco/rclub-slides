@@ -45,10 +45,10 @@ knitr::opts_chunk$set(fig.align = 'center')
 - 講義スライド作成
     - あなたが見ているスライド
 - 簡単なウェブサイト
-    - [kenjisato.jp](kenjisato.jp)
-    - [opur.club](opur.club) ... 
+    - [kenjisato.jp](https://kenjisato.jp)
+    - [opur.club](https://opur.club) ... 
 - 講義資料作成 
-    - [経済動学](led.kenjisato.jp)
+    - [経済動学](https://led.kenjisato.jp)
     - [大学院マクロ入門](https://htmlpreview.github.io/?https://github.com/kenjisato/intro-macro/blob/master/doc/r/optimal_growth_dp.html)
 - ときどき簡単なデータ分析
 
@@ -151,7 +151,7 @@ OPU R Club のウェブサイト
 ## <i class="fab fa-windows"></i> → rstudio → ⏎
 
 ```{r, img-rstudio, echo=FALSE}
-knitr::include_graphics("/2018w-lesson1/images/rstudio.png")
+knitr::include_graphics("images/rstudio.png")
 ```
 
 ---
