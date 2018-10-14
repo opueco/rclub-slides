@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>R Club - Lesson 2</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/solid.css" integrity="sha384-osqezT+30O6N/vsMqwW8Ch6wKlMofqueuia2H7fePy42uC05rm1G+BUPSd2iBSJL" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/fontawesome.css" integrity="sha384-BzCy2fixOYd0HObpx3GMefNqdbA7Qjcc91RgYeDjrHTIEXqiF00jKvgQG0+zY/7I" crossorigin="anonymous">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Lesson 2
+## <a href="http://s.opur.club/18d2" class="uri">http://s.opur.club/18d2</a>
+### Kenji Sato
+### 2018/10/17 &amp; 24
+
+---
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    TeX: {
+      Macros: {
+      }
+    }
+  });
+</script>
+
+$$\let\oldhat\hat
+\renewcommand{\hat}[1]{\oldhat{\hspace{0pt} #1}}$$
+
+
+
+&lt;div style="margin-top: -2.5em"&gt;&lt;/div&gt;
+
+## 本日の目標
+
+- オブジェクト・ベクトル
+- 名前
+- ベクトルに対する操作
+- データフレームと tibble
+- CSV / Excel 
+
+---
+
+
+## 本日の目標
+
+- **オブジェクト・ベクトル**
+- 名前
+- ベクトルに対する操作
+- データフレームと tibble
+- CSV / Excel 
+
+---
+
+## オブジェクト
+
+オブジェクトには以下のようなものがあります。私たちが何らかの操作をしようとする「対象」となるものです。
+
+- 数・文字列などのベクトル
+- 表形式データ
+- 行列
+- リスト
+- 関数
+
+---
+
+## オブジェクトの型
+
+R で最も基本となるオブジェクトは，数値・文字列とそれを並べたベクトルです。
+`typoeof()` 関数が型＝種類を示します。
+
+.pull-left[
+
+```r
+&gt; typeof(100)
+```
+
+```
+## [1] "double"
+```
+
+```r
+&gt; typeof("RClub")
+```
+
+```
+## [1] "character"
+```
+
+```r
+&gt; typeof(50L)
+```
+
+```
+## [1] "integer"
+```
+]
+
+.pull-right[
+
+```r
+&gt; typeof(-3 + 1i)
+```
+
+```
+## [1] "complex"
+```
+
+```r
+&gt; typeof(TRUE)
+```
+
+```
+## [1] "logical"
+```
+
+```r
+&gt; typeof(FALSE)
+```
+
+```
+## [1] "logical"
+```
+
+]
+
+---
+
+## ベクトルの型
+
+ベクトルでない単一の数・文字列というものは R にはありません。したがって，`c()` で生成されるベクトルに `typeof()` を適用すると要素の共通の型が示されます。
+
+
+```r
+&gt; typeof(c(1, 2, 3))
+```
+
+```
+## [1] "double"
+```
+
+```r
+&gt; typeof(c("Hello", "RClub"))
+```
+
+```
+## [1] "character"
+```
+
+```r
+&gt; typeof(c(TRUE, FALSE))
+```
+
+```
+## [1] "logical"
+```
+
+---
+
+## 暗黙の型変換
+
+ベクトルの要素はすべて同一の型をもっています。次のコードで実験してみましょう。
+
+何が起こるかの予想をたててから，コードを実行してください
+
+
+```r
+&gt; c(3, TRUE, FALSE)
+&gt; c("1", TRUE, FALSE)
+&gt; c(1, "Two")
+&gt; c(10L, 5)   # 10L は整数の 10
+&gt; c(30, 3 + 1i)
+```
+
+
+---
+
+## ベクトルを生成する便利な関数
+
+ベクトルを生成するには， `c()` 以外にもたくさんの方法があります。
+次の各コードが何をするか，予想をたててから実行してください
+
+
+
+```r
+&gt; double(10)
+&gt; integer(5)
+&gt; character(2)
+&gt; logical(3)
+&gt; 1:10
+&gt; seq(-2, 2, by = 0.5)
+&gt; seq(-2, 2, length.out = 5)
+```
+
+
+---
+
+## 本日の目標
+
+- オブジェクト・ベクトル
+- **名前**
+- ベクトルに対する操作
+- データフレームと tibble
+- CSV / Excel 
+
+---
+
+## 名付け
+
+`&lt;-` を使って名前を付けます。（代わりに `=` を使うこともできます。1つのプロジェクトに両方を使わないように）
+
+
+
+```r
+&gt; numbers &lt;- 1:10
+&gt; numbers
+```
+
+```
+##  [1]  1  2  3  4  5  6  7  8  9 10
+```
+
+`-&gt;` という逆向きの矢印を使うこともできます。
+
+
+```r
+&gt; 1:10 -&gt; numbers2
+&gt; numbers2
+```
+
+```
+##  [1]  1  2  3  4  5  6  7  8  9 10
+```
+
+---
+
+## よくあるエラー
+
+次のコードは何が問題でしょうか？
+
+
+```r
+&gt; x &lt; - 10
+```
+
+```
+##  [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+## [10] FALSE FALSE
+```
+
+--
+
+[Alt] + [-] のショートカットキーを使いましょう。
+
+---
+
+## 名前
+
+オブジェクトには名前を付けることができます。
+基本的なルールは次の通りです。
+
+- 文字と数字と `.`, `_` のみで構成されていること
+- 最初の文字は数字や `_` であってはならない
+- `TRUE`/`FALSE`, `NULL`, `NA`, `if`, `function` などの予約語でないこと
+
+
+---
+
+## クイズ
+
+次のコマンドはどれがエラーになると思いますか？
+
+&lt;pre&gt;&lt;code class="r hljs remark-code"&gt;&lt;div class="remark-code-line"&gt;&gt; . &lt;- 100
+&gt; _x &lt;- 100
+&gt; 2b &lt;- 1:10
+&gt; TRUE &lt;- FALSE
+&gt; 大学 &lt;- "大阪府立大学"
+&gt; `2018` &lt;- 540
+&lt;/div&gt;&lt;/code&gt;
+&lt;/pre&gt;
+
+---
+
+## 本日の目標
+
+- オブジェクト・ベクトル
+- 名前
+- **ベクトルに対する操作**
+- データフレームと tibble
+- CSV / Excel 
+
+---
+
+## ベクトルの演算
+
+
+```r
+&gt; x &lt;- 0:10
+&gt; y &lt;- seq(0, 1, by = 0.1)
+```
+
+
+```r
+&gt; x + y   # 加
+&gt; x - y   # 減
+&gt; x * y   # 乗
+&gt; x / y   # 除
+```
+
+
+
+```r
+&gt; log(x)
+&gt; exp(y)
+```
+
+片方の数が少ない場合は長い方に合わせて引き伸ばします。
+
+
+```r
+&gt; 3 * x
+```
+
+
+---
+
+## 比較
+
+
+```r
+&gt; x &lt; 5
+```
+
+```
+##  [1]  TRUE  TRUE  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE
+## [10] FALSE FALSE
+```
+
+```r
+&gt; x &lt; 3 | x &gt; 6   # OR
+```
+
+```
+##  [1]  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE  TRUE  TRUE
+## [10]  TRUE  TRUE
+```
+
+```r
+&gt; x &lt; 3 &amp; x &gt; 6   # AND
+```
+
+```
+##  [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+## [10] FALSE FALSE
+```
+
+
+---
+
+## 文字列関数
+
+
+```r
+&gt; paste("Hello,", c("Alice", "Bob", "Charlie"), "!")
+```
+
+```
+## [1] "Hello, Alice !"   "Hello, Bob !"     "Hello, Charlie !"
+```
+
+
+
+```r
+&gt; paste0("Group-", LETTERS)
+```
+
+```
+##  [1] "Group-A" "Group-B" "Group-C" "Group-D" "Group-E"
+##  [6] "Group-F" "Group-G" "Group-H" "Group-I" "Group-J"
+## [11] "Group-K" "Group-L" "Group-M" "Group-N" "Group-O"
+## [16] "Group-P" "Group-Q" "Group-R" "Group-S" "Group-T"
+## [21] "Group-U" "Group-V" "Group-W" "Group-X" "Group-Y"
+## [26] "Group-Z"
+```
+
+
+
+```r
+&gt; sub("ery", "erry", c("Apple", "Bluebery", "Chery"))
+```
+
+```
+## [1] "Apple"     "Blueberry" "Cherry"
+```
+
+
+---
+
+## 条件による抽出
+
+
+```r
+&gt; fruit &lt;- stringr::fruit  # フルーツの名前のベクトル
+&gt; head(fruit)              # 最初の6個を表示
+```
+
+```
+## [1] "apple"       "apricot"     "avocado"     "banana"     
+## [5] "bell pepper" "bilberry"
+```
+
+--
+
+
+```r
+&gt; is_berry &lt;- endsWith(fruit, "berry")   # berry で終わる名前か
+&gt; head(is_berry)
+```
+
+```
+## [1] FALSE FALSE FALSE FALSE FALSE  TRUE
+```
+
+--
+
+
+```r
+&gt; berries &lt;- fruit[is_berry]     # TRUE の部分のみ抽出
+&gt; head(berries)
+```
+
+```
+## [1] "bilberry"    "blackberry"  "blueberry"   "boysenberry"
+## [5] "cloudberry"  "cranberry"
+```
+
+
+---
+
+## 集約関数
+
+
+```r
+&gt; x
+```
+
+```
+##  [1]  0  1  2  3  4  5  6  7  8  9 10
+```
+
+```r
+&gt; sum(x)    # 合計 
+```
+
+```
+## [1] 55
+```
+
+```r
+&gt; mean(x)   # 平均
+```
+
+```
+## [1] 5
+```
+
+```r
+&gt; var(x)    # 不偏分散
+```
+
+```
+## [1] 11
+```
+
+
+---
+
+## クイズ
+
+TRUE は 1, FALSE は0 だったことを思い出す。
+
+
+```r
+&gt; head(is_berry)  # is_berry は berry で終わる果物なら TRUE
+```
+
+```
+## [1] FALSE FALSE FALSE FALSE FALSE  TRUE
+```
+
+次は何を計算している？
+
+
+```r
+&gt; sum(is_berry)
+```
+
+```
+## [1] 14
+```
+
+```r
+&gt; mean(is_berry)
+```
+
+```
+## [1] 0.175
+```
+
+
+---
+
+## 要素の抽出
+
+`[]` を使います。インデックスは 1 から始まります。
+
+```r
+&gt; x[1]
+&gt; x[2]
+&gt; berries[10]
+```
+
+複数のインデックスを付けることもできます。
+
+
+```r
+&gt; berries[c(3, 7, 10)]
+```
+
+```
+## [1] "blueberry"   "elderberry"  "huckleberry"
+```
+
+---
+
+## オブジェクトの保存
+
+`saveRDS()` を使って，後日作業を再開するときのためにデータを保存できます。
+
+
+```r
+&gt; saveRDS(x, file = "Data/x.rds")
+```
+
+作業再開時には `readRDS()` を使います。
+
+
+```r
+&gt; x &lt;- readRDS("Data/x.rds")
+```
+
+
+`dump()` の使用について [こちら](https://opur.club/textbook/2018-2-1/#save-objects) を確認してください。
+
+
+---
+
+## 本日の目標
+
+- オブジェクト・ベクトル
+- 名前
+- ベクトルに対する操作
+- **データフレームと tibble**
+- CSV / Excel 
+
+
+---
+
+## データフレーム = 表形式データ
+
+
+```r
+&gt; score &lt;- data.frame(
++   Name = c("Alice", "Bob", "Charlie"),
++   Econ = c(90,  80, 100),
++   Math = c(100, 90,  60)
++ )
+&gt; score
+```
+
+```
+##      Name Econ Math
+## 1   Alice   90  100
+## 2     Bob   80   90
+## 3 Charlie  100   60
+```
+
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; Name &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Econ &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Math &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Alice &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 90 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 100 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Bob &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 80 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 90 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Charlie &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 100 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 60 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+---
+
+## データフレームの各列はベクトル
+
+![](https://dev.opur.club/images/2018-2-2-1.jpeg)
+
+---
+
+## 切り出し
+
+次の各コマンドが何をしているかを確認してください。
+
+
+```r
+&gt; score[1]
+&gt; score["Name"]
+&gt; score$Name
+&gt; score[, 2]
+&gt; score[score$Name == "Alice", ]
+&gt; score[1, 2]
+&gt; score$Name[3]
+&gt; score[score$Name == "Bob", "Econ"]
+```
+
+---
+
+## 列の追加
+
+個人ごとに全教科の平均を求めます。
+
+
+```r
+&gt; (avg_score &lt;- rowMeans(score[c("Econ", "Math")]))
+```
+
+```
+## [1] 95 85 80
+```
+
+平均得点を列として追加します。（dplyr を使ってもっと簡単にする方法は次回学びます）
+
+
+```r
+&gt; score$Avg &lt;- avg_score
+&gt; score
+```
+
+```
+##      Name Econ Math Avg
+## 1   Alice   90  100  95
+## 2     Bob   80   90  85
+## 3 Charlie  100   60  80
+```
+
+---
+
+## tibble 
+
+data.frame を改良した表形式データ。**tidyverse** パッケージ（あるいは **tibble** パッケージ）を読み込んで使う。
+
+
+```r
+&gt; library(tidyverse)
+&gt; scr &lt;- tibble(
++   Name = c("Alice", "Bob", "Charlie"),
++   Econ = c(90,      80,    100),
++   Math = c(100,     90,    60)
++ )
+&gt; scr
+```
+
+```
+## # A tibble: 3 x 3
+##   Name     Econ  Math
+##   &lt;chr&gt;   &lt;dbl&gt; &lt;dbl&gt;
+## 1 Alice      90   100
+## 2 Bob        80    90
+## 3 Charlie   100    60
+```
+
+---
+
+## 1つの違い
+
+
+```r
+&gt; score[, 2]
+```
+
+```
+## [1]  90  80 100
+```
+
+```r
+&gt; scr[, 2]
+```
+
+```
+## # A tibble: 3 x 1
+##    Econ
+##   &lt;dbl&gt;
+## 1    90
+## 2    80
+## 3   100
+```
+
+
+data.frame の上記振る舞いを前提にしている関数は tibble では動かないかも。その場合は，`as.data.frame()` で変換
+
+---
+
+## 本日の目標
+
+- オブジェクト・ベクトル
+- 名前
+- ベクトルに対する操作
+- データフレームと tibble
+- **CSV / Excel** 
+
+---
+
+## 外部とのデータのやり取り
+
+自分でデータを入力する必要がある場合は
+
+- CSV, Excel を使ってデータ入力
+- R で統計分析
+
+という分業が標準的だと思われる。
+
+という訳で，R のネイティブなデータ形式（RDS 形式）ではなく，CSV/Excel との間でデータのやり取りをする方法を覚える必要がある。
+
+---
+
+## readr と readxl
+
+- CSV の読み込みは `readr::read_csv()` など
+- Excel ファイルの読み込みは `readxl::read_excel()` など
+- CSV への書き出しは `readr::write_csv()`, `readr::write_excel_csv()`
+
+
+---
+
+## 課題
+
+- [Lesson 2-1: R のベクトル](https://opur.club/textbook/2018-2-1/)
+- [Lesson 2-2: データフレーム・tibble](https://opur.club/textbook/2018-2-2/)
+
+にはスライドで扱っていない内容，練習問題を含んでいます。
+
+読んで練習問題を実行してみてください。
+
+
+---
+
+## 全部終わった人への課題
+
+[Maddison プロジェクト](https://www.rug.nl/ggdc/historicaldevelopment/maddison/releases/maddison-project-database-2018) の Excel ファイルをダウンロードしてください。
+
+そして，西暦 500 年以降の日本の実質GDPをプロットするコードを書いてください。
+
+ヒント (DL済みとして)
+
+
+```r
+mpd &lt;- ______("Data/mpd2018.xlsx", sheet = 2)
+japan &lt;- mpd[__________ == "Japan", ]
+japan500 &lt;- japan[________ &gt;= 500, ]
+plot(japan500$year, __________, type = "l")
+```
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

@@ -144,3 +144,24 @@ tr:nth-child(even) {
   background-size: contain;
   background-position: 0 20;
 }
+
+
+
+ul {
+  position: relative;
+}
+
+ul li {
+  line-height: 1.5;
+  padding: 0.5em 0;
+  list-style-type: none;
+}
+
+ul li:before {
+  font-family: "Font Awesome 5 Free";
+  content: "\f138";
+  position: absolute;
+  left : 0;
+  color: black;
+}
+
