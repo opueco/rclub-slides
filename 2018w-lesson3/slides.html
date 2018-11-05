@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>R Club - Lesson 3</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/solid.css" integrity="sha384-osqezT+30O6N/vsMqwW8Ch6wKlMofqueuia2H7fePy42uC05rm1G+BUPSd2iBSJL" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/fontawesome.css" integrity="sha384-BzCy2fixOYd0HObpx3GMefNqdbA7Qjcc91RgYeDjrHTIEXqiF00jKvgQG0+zY/7I" crossorigin="anonymous">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Lesson 3
+## <a href="http://s.opur.club/18d3" class="uri">http://s.opur.club/18d3</a>
+### Kenji Sato
+### 2018/11/7 &amp; 14
+
+---
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    TeX: {
+      Macros: {
+      }
+    }
+  });
+</script>
+
+$$\let\oldhat\hat
+\renewcommand{\hat}[1]{\oldhat{\hspace{0pt} #1}}$$
+
+
+
+&lt;div style="margin-top: -2.5em"&gt;&lt;/div&gt;
+
+## 今日理解するコードの例
+
+
+```r
+diamonds %&gt;% 
+  filter(cut &gt; "Good") %&gt;% 
+  select(carat, color, price) %&gt;% 
+  ggplot(aes(x = carat, y = price, color = color)) +
+  geom_point(alpha = 0.5)
+```
+
+---
+
+## トピック
+
+- パイプ
+- dplyr によるデータ処理
+- ggplot2 による可視化の入門
+
+---
+
+## tidyverse
+
+
+```r
+# 自宅でやる場合は，install.packages("tidyverse") を実行
+library(tidyverse)
+```
+
+```
+## ── Attaching packages ───────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──
+```
+
+```
+## ✔ ggplot2 3.0.0     ✔ purrr   0.2.5
+## ✔ tibble  1.4.2     ✔ dplyr   0.7.6
+## ✔ tidyr   0.8.1     ✔ stringr 1.3.1
+## ✔ readr   1.1.1     ✔ forcats 0.3.0
+```
+
+```
+## ── Conflicts ──────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+## ✖ dplyr::filter() masks stats::filter()
+## ✖ dplyr::lag()    masks stats::lag()
+```
+
+
+---
+
+## パイプ
+
+**magrittr** パッケージのパイプ `%&gt;%` が **tidyverse** のいたるところで使われます。
+
+
+```r
+入力 %&gt;% 
+  関数1() %&gt;% 
+  関数2() %&gt;% 
+  関数3()
+```
+
+パイプラインを通ってガスが送られていくように，データが変形しながら左から右に送られていくイメージ。
+
+
+パイプ `%&gt;%` の後ろで改行していることに注意。
+
+---
+
+## クイズ
+
+次のコードはなぜ動かない？
+
+
+```r
+入力 
+%&gt;% 関数()
+```
+
+--
+
+R は完結したコマンドを確認した時点で即座に実行していくことに注意。
+
+---
+
+## パイプ（つづき）
+
+次の左右2つのコードは同じ意味
+
+.pull-left[
+
+```r
+関数(入力1, 入力2, 入力3)
+```
+]
+
+.pull-right[
+
+```r
+入力1 %&gt;% 
+  関数(入力2, 入力3)
+```
+]
+
+
+結果に名前を付けたいときは
+
+
+```r
+名前 &lt;-
+  入力 %&gt;% 
+    関数1() %&gt;% 
+    関数2()
+```
+
+
+---
+
+## ショートカット
+
+パイプを入力するRStudio のショートカット
+
+.center[
+**Ctrl + Shift + M**
+]
+
+
+これを覚えるだけで作業がはかどります
+
+---
+
+## パイプの簡単な例
+
+
+```r
+# sqrt(4)
+4 %&gt;% sqrt()
+```
+
+```
+## [1] 2
+```
+
+
+
+```r
+# round(log10(305000), digits = 3)
+305000 %&gt;% 
+  log10() %&gt;% 
+  round(digits = 3)
+```
+
+```
+## [1] 5.484
+```
+
+
+---
+
+## クイズ
+
+結果を予想してから実行してください。
+
+
+```r
+# (1)
+2 ^ 100 %&gt;% log2() %&gt;% sqrt()
+
+# (2)
+stringr::fruit %&gt;% endsWith("berry") %&gt;% sum()
+
+# (3)
+rnorm(100) %&gt;% plot(type = "l")
+```
+
+
+---
+
+## dplyr
+
+「でぃーぷらいやー」
+
+- データ操作のためのパッケージ。
+- R の基本関数でやるよりも直感的で分かりやすい。
+- 操作方法を覚えたら SQL データベースとの連携も簡単にできるようになる。
+
+---
+
+## データ処理の基本的な流れ
+
+モデル化の前のデータ処理として極めて頻繁に行う処理・・・・
+
+1. 不要な列を落とす  
+  （例えば，消費のデータは不要，とか）
+1. 不要な行を落とす  
+  （例えば，1960年より前のデータはいらない，とか）
+1. 既存の列から計算された新しい情報を追加する
+  （例えば，文字列のカテゴリ変数を数値（ファクタ）にする）
+1. グループごとに集計する
+1. 集計結果に応じて並び替える
+
+
+---
+
+## パイプを使った表現
+
+
+```r
+新データ名 &lt;-
+  データ %&gt;% 
+    列を選ぶ(必要な列1, 必要な列2) %&gt;% 
+    行を取り出す(条件1, 条件2) %&gt;% 
+    列を追加する(新しい列名 = 計算式) %&gt;% 
+    グループ化する(グループ化のルール) %&gt;% 
+    集計する(集計値の名称 = 集計ルール) %&gt;% 
+    並び替える(並び替えルール)
+```
+
+それぞれの変換操作に対応する関数を覚えましょう。
+
+---
+
+## データの取得
+
+ここからは実際のデータを使って分析をするために，[Penn World Table](https://www.rug.nl/ggdc/productivity/pwt/kk) をダウンロードします。
+
+1. RClub 用のプロジェクトを開く
+1. Data フォルダがなければ作る
+1. 次のコマンドをコピペしてコンソールで実行する
+
+
+
+```r
+download.file(url = "http://www.rug.nl/ggdc/docs/pwt90.dta", 
+              destfile = "Data/pwt90.dta", mode = "wb") 
+```
+
+
+---
+
+## データの読み込み
+
+`Data/PWT90.dta` は STATA 用のファイルなので，`haven` というパッケージを使って読み込みます。
+
+**tidyverse** の一部ですが自動ロードされないので，`haven::` を付けます。
+
+
+
+
+
+```r
+pwt90 &lt;- haven::read_dta("Data/pwt90.dta")
+```
+
+---
+
+## データの表示
+
+
+```r
+View(pwt90)
+```
+
+
+大きすぎてあまり役に立たないかも。これから切り分ける方法を勉強します。
+
+
+変数の意味ですが，`haven::read_dta()` で読み込んだデータにはSTATA の変数情報も一緒に保存されています。ラベルを取り出す方法はココに書いていますのでご一読を
+
+&lt;http://opur.club/textbook/2018-3-1/#pwt-label&gt;
+
+
+---
+
+## 列の選択 = `select` 
+
+.left-column[
+![](images/select.png)
+]
+
+
+.right-column[
+
+```r
+pwt90 %&gt;% 
+  select(country, year, rgdpo)
+```
+
+```
+## # A tibble: 11,830 x 3
+##    country  year rgdpo
+##    &lt;chr&gt;   &lt;dbl&gt; &lt;dbl&gt;
+##  1 Aruba    1950    NA
+##  2 Aruba    1951    NA
+##  3 Aruba    1952    NA
+##  4 Aruba    1953    NA
+##  5 Aruba    1954    NA
+##  6 Aruba    1955    NA
+##  7 Aruba    1956    NA
+##  8 Aruba    1957    NA
+##  9 Aruba    1958    NA
+## 10 Aruba    1959    NA
+## # ... with 11,820 more rows
+```
+
+]
+
+
+
+---
+
+## `View()` に送ると少し便利
+
+
+```r
+pwt90 %&gt;% 
+  select(country, year, rgdpo) %&gt;% 
+  View()
+```
+
+
+```r
+pwt90 %&gt;% 
+  select(countrycode, year, pop) %&gt;% 
+  View()
+```
+
+
+---
+
+## 行の抽出 = `filter`
+
+.left-column[
+![](images/filter.png)
+]
+
+
+.right-column[
+
+
+
+
+```r
+pwt90 %&gt;% 
+  filter(country == "Japan")
+```
+
+```
+## # A tibble: 65 x 47
+##    countrycode country currency_unit  year
+##    &lt;chr&gt;       &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt;
+##  1 JPN         Japan   Yen            1950
+##  2 JPN         Japan   Yen            1951
+##  3 JPN         Japan   Yen            1952
+##  4 JPN         Japan   Yen            1953
+##  5 JPN         Japan   Yen            1954
+##  6 JPN         Japan   Yen            1955
+##  7 JPN         Japan   Yen            1956
+##  8 JPN         Japan   Yen            1957
+##  9 JPN         Japan   Yen            1958
+## 10 JPN         Japan   Yen            1959
+## # ... with 55 more rows, and 43 more
+## #   variables: rgdpe &lt;dbl&gt;, rgdpo &lt;dbl&gt;,
+## #   pop &lt;dbl&gt;, emp &lt;dbl&gt;, avh &lt;dbl&gt;,
+## #   hc &lt;dbl&gt;, ccon &lt;dbl&gt;, cda &lt;dbl&gt;,
+## #   cgdpe &lt;dbl&gt;, cgdpo &lt;dbl&gt;, ck &lt;dbl&gt;,
+## #   ctfp &lt;dbl&gt;, cwtfp &lt;dbl&gt;,
+## #   rgdpna &lt;dbl&gt;, rconna &lt;dbl&gt;,
+## #   rdana &lt;dbl&gt;, rkna &lt;dbl&gt;,
+## #   rtfpna &lt;dbl&gt;, rwtfpna &lt;dbl&gt;,
+## #   labsh &lt;dbl&gt;, delta &lt;dbl&gt;, xr &lt;dbl&gt;,
+## #   pl_con &lt;dbl&gt;, pl_da &lt;dbl&gt;,
+## #   pl_gdpo &lt;dbl&gt;, i_cig &lt;dbl+lbl&gt;,
+## #   i_xm &lt;dbl+lbl&gt;, i_xr &lt;dbl+lbl&gt;,
+## #   i_outlier &lt;dbl+lbl&gt;, cor_exp &lt;dbl&gt;,
+## #   statcap &lt;dbl&gt;, csh_c &lt;dbl&gt;,
+## #   csh_i &lt;dbl&gt;, csh_g &lt;dbl&gt;,
+## #   csh_x &lt;dbl&gt;, csh_m &lt;dbl&gt;,
+## #   csh_r &lt;dbl&gt;, pl_c &lt;dbl&gt;, pl_i &lt;dbl&gt;,
+## #   pl_g &lt;dbl&gt;, pl_x &lt;dbl&gt;, pl_m &lt;dbl&gt;,
+## #   pl_k &lt;dbl&gt;
+```
+
+
+
+]
+
+---
+
+## `filter` を試してみよう (1)
+
+`%in%` との組み合わせ
+
+
+```r
+pwt90 %&gt;% 
+  filter(country %in% c("United States", "Japan"))
+```
+
+コンマで条件を2つつなぐと .... 
+
+
+```r
+pwt90 %&gt;% 
+  filter(country %in% c("United States", "Japan"), year &gt; 2000)
+```
+
+欠損値の除去は `!is.na(列名)`
+
+
+```r
+pwt90 %&gt;% 
+  filter(country == "Aruba"), !is.na(rgdpo))
+```
+
+---
+
+## `filter` を試してみよう (2)
+
+OR 条件は `|` を使う
+
+
+```r
+pwt90 %&gt;% 
+  filter(pop &gt; 1 | rgdpo &gt; 3000)
+```
+
+
+`filter` と `select` のコンボ
+
+
+```r
+countries &lt;- c("Japan", "United States", "Republic of Korea")
+pwt90 %&gt;% 
+  filter(year &gt; 1960, country %in% countries) %&gt;% 
+  select(country, year, rgdpo, pop)
+```
+
+---
+
+## 変換して追加 = `mutate` 
+
+.left-column[
+![](images/mutate.png)
+]
+
+
+.right-column[
+
+
+
+
+```r
+pwt90 %&gt;% 
+  mutate(rgdpo_pc = rgdpo / pop)
+```
+
+```
+## # A tibble: 11,830 x 48
+##    countrycode country currency_unit  year
+##    &lt;chr&gt;       &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt;
+##  1 ABW         Aruba   Aruban Guild…  1950
+##  2 ABW         Aruba   Aruban Guild…  1951
+##  3 ABW         Aruba   Aruban Guild…  1952
+##  4 ABW         Aruba   Aruban Guild…  1953
+##  5 ABW         Aruba   Aruban Guild…  1954
+##  6 ABW         Aruba   Aruban Guild…  1955
+##  7 ABW         Aruba   Aruban Guild…  1956
+##  8 ABW         Aruba   Aruban Guild…  1957
+##  9 ABW         Aruba   Aruban Guild…  1958
+## 10 ABW         Aruba   Aruban Guild…  1959
+## # ... with 11,820 more rows, and 44 more
+## #   variables: rgdpe &lt;dbl&gt;, rgdpo &lt;dbl&gt;,
+## #   pop &lt;dbl&gt;, emp &lt;dbl&gt;, avh &lt;dbl&gt;,
+## #   hc &lt;dbl&gt;, ccon &lt;dbl&gt;, cda &lt;dbl&gt;,
+## #   cgdpe &lt;dbl&gt;, cgdpo &lt;dbl&gt;, ck &lt;dbl&gt;,
+## #   ctfp &lt;dbl&gt;, cwtfp &lt;dbl&gt;,
+## #   rgdpna &lt;dbl&gt;, rconna &lt;dbl&gt;,
+## #   rdana &lt;dbl&gt;, rkna &lt;dbl&gt;,
+## #   rtfpna &lt;dbl&gt;, rwtfpna &lt;dbl&gt;,
+## #   labsh &lt;dbl&gt;, delta &lt;dbl&gt;, xr &lt;dbl&gt;,
+## #   pl_con &lt;dbl&gt;, pl_da &lt;dbl&gt;,
+## #   pl_gdpo &lt;dbl&gt;, i_cig &lt;dbl+lbl&gt;,
+## #   i_xm &lt;dbl+lbl&gt;, i_xr &lt;dbl+lbl&gt;,
+## #   i_outlier &lt;dbl+lbl&gt;, cor_exp &lt;dbl&gt;,
+## #   statcap &lt;dbl&gt;, csh_c &lt;dbl&gt;,
+## #   csh_i &lt;dbl&gt;, csh_g &lt;dbl&gt;,
+## #   csh_x &lt;dbl&gt;, csh_m &lt;dbl&gt;,
+## #   csh_r &lt;dbl&gt;, pl_c &lt;dbl&gt;, pl_i &lt;dbl&gt;,
+## #   pl_g &lt;dbl&gt;, pl_x &lt;dbl&gt;, pl_m &lt;dbl&gt;,
+## #   pl_k &lt;dbl&gt;, rgdpo_pc &lt;dbl&gt;
+```
+
+
+]
+
+---
+
+## 変換して `select` = `transmutate` 
+
+.left-column[
+![](images/transmute.png)
+]
+
+
+.right-column[
+
+
+
+
+```r
+pwt90 %&gt;% 
+  transmute(country, year, 
+            rgdpo_pc = rgdpo / pop)
+```
+
+```
+## # A tibble: 11,830 x 3
+##    country  year rgdpo_pc
+##    &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt;
+##  1 Aruba    1950       NA
+##  2 Aruba    1951       NA
+##  3 Aruba    1952       NA
+##  4 Aruba    1953       NA
+##  5 Aruba    1954       NA
+##  6 Aruba    1955       NA
+##  7 Aruba    1956       NA
+##  8 Aruba    1957       NA
+##  9 Aruba    1958       NA
+## 10 Aruba    1959       NA
+## # ... with 11,820 more rows
+```
+
+
+]
+
+
+
+---
+
+## ggplot2 による可視化
+
+
+
+```r
+countries &lt;- c("Japan", "United States", "Republic of Korea")
+pwt90 %&gt;% 
+  filter(year &gt; 1960, country %in% countries) %&gt;% 
+  transmute(country, year, rgdpo_pc = rgdpo / pop) %&gt;% 
+  ggplot(aes(x = year, y = rgdpo_pc, color = country)) + 
+    geom_line()
+```
+
+
+- `ggplot()` グラフ領域の作成，デフォルト aes の指定
+- `aes()` データを視覚特性に置き換える関数。例えば, `color = country` という指定は `country` 列の
+   情報を使って，色 1, 2, 3, ... を決めるということ。
+- `geom_line()` 折れ線グラフのレイヤーを作る
+
+---
+
+## 結果
+
+&lt;img src="slides_files/figure-html/unnamed-chunk-33-1.png" width="600" style="display: block; margin: auto;" /&gt;
+
+**ggplot2** による可視化は次回以降に詳しく扱う予定です。
+
+---
+
+## グループ化 = `group_by`
+
+
+.left-column[
+![](images/group_by.png)
+]
+
+
+.right-column[
+
+先ほどの図を見ると，一人あたり実質GDPの成長率にかなり差がありそうだなという気がする。
+実際に平均成長率を計算するにはデータのうち `country` 列が同じものをひとまとまりと考えて計算する必要がある。
+
+このときに使うのが， `group_by`
+
+
+```r
+pwt90 %&gt;% 
+  group_by(country)
+```
+
+]
+
+---
+
+## 成長率の公式
+
+`\(Y_0, Y_1, \cdots, Y_N\)` の平均成長率というのは，たいてい次の式を満たす `\(g\)` のことを指す：
+ `\(Y_N = (1 + g)^N Y_0\)`
+
+全期間の成長率の `\(N\)`乗根を取るか。（Effective rate）
+$$
+g = \left( Y_N / Y_0 \right)^{1/N} - 1
+$$
+
+
+対数値の差を期間の長さで割る。（Nominal rate）
+
+$$
+g \approx \frac{\log Y_N - \log Y_0}{N}
+$$
+
+
+Nominal rate の方が望ましい性質があるのでこちらを計算する。
+
+---
+
+## 成長率を計算する関数
+
+`$$\begin{multline}
+\log Y_N - \log Y_0 = \\
+(\log Y_N - \log Y_{N-1}) + (\log Y_{N-1} - \log Y_{N-2})\\
++\cdots + (\log Y_1 - \log Y_0)
+\end{multline}$$`
+
+
+に注意する。 `\(\frac{\log Y_N - \log Y_0}{N}\)` は階差の算術平均である。
+
+次の関数を定義しておこう。（関数定義の詳細は後日）
+
+
+```r
+avggr &lt;- function(x) {
+  mean(log(x) - lag(log(x)), na.rm = TRUE)
+}
+# test
+avggr(c(1, 1.1, 1.21))
+```
+
+```
+## [1] 0.09531018
+```
+
+---
+
+## 集計 = `summarize`
+
+
+.left-column[
+![](images/summarize.png)
+]
+
+
+.right-column[
+
+
+```r
+pwt90 %&gt;% 
+  filter(year &gt; 1960, 
+         country %in% countries) %&gt;% 
+  transmute(country, year, 
+            rgdpo_pc = rgdpo / pop) %&gt;% 
+　group_by(country) %&gt;% 
+  summarize(rate = avggr(rgdpo_pc))
+```
+
+```
+## # A tibble: 3 x 2
+##   country             rate
+##   &lt;chr&gt;              &lt;dbl&gt;
+## 1 Japan             0.0353
+## 2 Republic of Korea 0.0633
+## 3 United States     0.0203
+```
+
+]
+
+---
+
+## 並べ替え = `arrange`
+
+.left-column[
+![](images/arrange.png)
+]
+
+
+.right-column[
+
+
+```r
+pwt90 %&gt;% 
+  filter(year &gt; 1960, 
+         country %in% countries) %&gt;% 
+  transmute(country, year, 
+            rgdpo_pc = rgdpo / pop) %&gt;% 
+　group_by(country) %&gt;% 
+  summarize(rate = avggr(rgdpo_pc)) %&gt;% 
+  arrange(desc(rate))
+```
+
+```
+## # A tibble: 3 x 2
+##   country             rate
+##   &lt;chr&gt;              &lt;dbl&gt;
+## 1 Republic of Korea 0.0633
+## 2 Japan             0.0353
+## 3 United States     0.0203
+```
+
+]
+
+
+---
+
+## まとめ
+
+**dplyr** の動詞: 
+- `filter`
+- `select`
+- `mutate`, `transmute`
+- `group_by` + `summarize`, 
+- `arrange` 
+
+を学んだ。これらをパイプでつなげて表形式データを加工できるようになった。
+
+---
+
+## 課題
+
+- PWT v9.0 の全データを用いて，1980年以降の人口成長率が最も高かった国上位3カ国を特定せよ。
+- PWT v9.0 のOECD 加盟国（次のページ）のデータを用いて，1985年から2014年の期間で1人あたり実質GDPの平均年率成長率を計算し，
+  成長率の高い順に並べなさい。
+- 1960年から1985年に限定すると，平均成長率上位はどうなるか？
+
+
+---
+
+## OECD
+
+&lt;http://www.oecd.org/about/membersandpartners/&gt;
+
+
+```r
+oecd &lt;- c("Australia", "Austria", "Belgium", "Canada", "Chile", 
+  "Czech Republic", "Denmark", "Estonia", "Finland", "France", 
+  "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Israel", 
+  "Italy", "Japan", "Republic of Korea", "Latvia", "Lithuania", 
+  "Luxembourg", "Mexico", "Netherlands", "New Zealand", "Norway", 
+  "Poland", "Portugal", "Slovakia", "Slovenia", "Spain", 
+  "Sweden", "Switzerland", "Turkey", "United Kingdom", 
+  "United States")
+```
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
