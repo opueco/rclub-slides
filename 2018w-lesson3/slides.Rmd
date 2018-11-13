@@ -154,6 +154,8 @@ R は完結したコマンドを確認した時点で即座に実行していく
 ```
 
 
+**もちろん普通はこういうことはしません**
+
 ---
 
 ## クイズ
@@ -253,7 +255,7 @@ pwt90 <- haven::read_dta("Data/pwt90.dta")
 
 ## データの表示
 
-```{r, eval = FALSE}
+```{r, eval = FALSE, prompt=TRUE}
 View(pwt90)
 ```
 
@@ -401,7 +403,7 @@ options(oopt)
 
 ---
 
-## 変換して `select` = `transmutate` 
+## 変換して `select` = `transmute` 
 
 .left-column[
 ![](images/transmute.png)
