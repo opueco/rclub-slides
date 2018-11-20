@@ -1,0 +1,474 @@
+---
+title: "R Club - Lesson 4"
+author: Kenji Sato
+date: 2018/11/21 & 28
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: 
+      - "../asset/remark-css/style.css"
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+    pandoc_args: [
+      "--include-before-body", "../asset/mathjax-macro.md"
+    ]
+subtitle: http://s.opur.club/18d4
+header-includes: 
+    - <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/solid.css" integrity="sha384-osqezT+30O6N/vsMqwW8Ch6wKlMofqueuia2H7fePy42uC05rm1G+BUPSd2iBSJL" crossorigin="anonymous">
+    - <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/fontawesome.css" integrity="sha384-BzCy2fixOYd0HObpx3GMefNqdbA7Qjcc91RgYeDjrHTIEXqiF00jKvgQG0+zY/7I" crossorigin="anonymous">
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  fig.align = 'center',
+  out.height = 400,
+  fig.asp = 1/1.618,
+  dpi = 196,
+  prompt = FALSE
+)
+options(width = 63)
+```
+
+<div style="margin-top: -2.5em"></div>
+
+## Cheat Sheets
+
+<https://www.rstudio.com/resources/cheatsheets/>
+
+R の主要なパッケージの主要な関数がコンパクトにまとめられていて大変便利。
+
+本日は，「Data Visualization Cheat Sheet」の内容をざっと確認する。
+
+
+---
+
+## トピック
+
+- ggplot2 による可視化の入門
+- gpplot2 を使って PWT データの可視化
+- ついでに乱数を生成する関数を学ぶ。
+
+---
+
+## tidyverse
+
+- R プロジェクトを開く
+    - Data フォルダに PWT データ
+    - Graphics フォルダがあることを確認
+- **tidyverse** をロードする
+
+```{r}
+# 自宅でやる場合は，install.packages("tidyverse") を実行
+library(tidyverse)
+```
+
+---
+
+## Review: ggplot2 の基本構造
+
+```{r, eval = FALSE}
+ggplot(dataframe) + 
+  geom_*(aes(...)) +
+  geom_*(aes(...), data = 他のデータ) + # geom_* は必要な数だけ
+  <その他装飾のためのレイヤー>
+```
+
+保存するには，プロットした後に 
+
+```{r, eval = FALSE}
+ggsave("Graphics/filename.pdf")
+```
+
+などとする。
+
+---
+
+## データ生成
+
+```{r}
+set.seed(611)
+N <- 100
+group <- factor(sample(c("Good", "Normal", "Bad"), 
+                       size = N, replace = TRUE), 
+                levels = c("Good", "Normal", "Bad"))
+x <- rnorm(N)
+y <- 0.8 * x  + runif(N) + 0.4 * as.integer(group)
+
+df <- tibble(xval = x, yval = y, group)
+head(df)
+```
+
+
+---
+
+## 各グループの数：棒グラフ 
+
+次のグラフを作成してください。
+
+```{r geom_bar, echo=FALSE}
+ggplot(df) +
+  geom_bar(aes(x = group))
+```
+
+---
+
+## 各グループの数：棒グラフ
+
+```{r, ref.label = "geom_bar", eval=FALSE}
+```
+
+`count` はどこにも書いていないけど計算されている。これは `geom_bar()` を呼び出したときに自動的に計算される「デフォルトの `stat`」だから。
+
+明示的に書けば次のようになる。
+
+```{r geom_bar_stat, eval = FALSE}
+ggplot(df) +
+  geom_bar(aes(x = group), stat = "count")
+```
+
+---
+
+## 座標の反転
+
+```{r geom_bar_flip}
+ggplot(df) +
+  geom_bar(aes(x = group)) + 
+{{  coord_flip()}}
+```
+
+
+---
+
+## 各グループの割合：棒グラフ
+
+カウントでなく割合をプロットしたい場合にはどうする？
+
+```{r fraction, echo=FALSE}
+ggplot(df) +
+  geom_bar(aes(x = group, y = ..count.. / sum(..count..)))
+```
+
+
+---
+
+## 各グループの割合：棒グラフ
+
+`..count..` で内部的に計算されているカウントデータを利用できる。
+
+```{r, ref.label="fraction", eval=FALSE}
+```
+
+
+2つのドットで囲んだ `..statname..` は内部的に計算された集計情報を利用するための方法。ときどき使われることがあるので，覚えておいてください。
+
+
+もちろん **dplyr** で下処理をしてもよい。
+
+---
+
+## 割合：積み上げ棒グラフ
+
+割合を示すときには，次のようなグラフを使うことが多い。
+
+```{r, eval = FALSE}
+df %>% 
+  group_by(_____) %>% 
+  summarize(cases = n()) %>% 
+  ggplot() + 
+  geom_col(aes(x = 1, y = _____, fill = _____))
+```
+```{r fraction2, echo = FALSE, out.height = 250}
+df %>% 
+  group_by(group) %>% 
+  summarize(cases = n()) %>% 
+  ggplot() + 
+  geom_col(aes(x = 1, y = cases, fill = group))
+```
+
+---
+
+## `geom_col` or `geom_bar`?
+
+`geom_col` は高さがデータの別の値になる。`stat = 'identity'`
+
+`geom_bar` は高さがカウントデータになる。`stat = 'count'`
+
+
+---
+
+## 割合：パイチャート
+
+```{r, eval = FALSE}
+df %>% 
+  group_by(group) %>% 
+  summarize(cases = n()) %>% 
+  ggplot() + 
+  geom_col(aes(x = 1, y = cases, fill = group)) + 
+  _____(theta = 'y')
+```
+```{r pie, echo = FALSE, out.height = 250}
+df %>% 
+  group_by(group) %>% 
+  summarize(cases = n()) %>% 
+  ggplot() + 
+  geom_col(aes(x = 1, y = cases, fill = group)) + 
+  coord_polar(theta = 'y')
+```
+
+
+---
+
+## 番外編：ワッフルチャート
+
+```{r waffle, out.height = 250}
+# install.packages("waffle")
+summary <- 
+  df %>% 
+  group_by(group) %>% 
+  summarize(cases = n()) 
+
+summary.vec <- summary$cases
+names(summary.vec) <- summary$group
+waffle::waffle(summary.vec)
+```
+
+
+---
+
+## 分布
+
+`xval` の分布を見てみよう。
+
+```{r xdist, out.height=250}
+df %>% 
+  ggplot(aes(x = xval)) +
+  geom_histogram()
+```
+
+
+---
+
+## 分布
+
+グループごとの分布を見たい場合は？次はうまくいかない
+
+```{r badgraph, out.height=250}
+df %>% 
+  ggplot(aes(x = xval, fill = group)) +
+  geom_histogram()
+```
+
+---
+
+## `position = "dodge"`
+
+```{r dodge, out.height=250}
+df %>% 
+  ggplot(aes(x = xval, fill = group)) +
+  geom_histogram(position = "dodge")
+```
+
+
+---
+
+## `facet_wrap`
+
+```{r facetwrap, out.height=300, fig.asp = 0.5}
+df %>% 
+  ggplot(aes(x = xval)) +
+  geom_histogram() +
+  facet_wrap(~ group)
+```
+
+
+---
+
+## ヴァイオリンプロット
+
+
+```{r violin, out.height=300, fig.asp = 0.5}
+df %>% 
+  ggplot() +
+  geom_violin(aes(x = group, y = xval, fill = group))
+```
+
+---
+
+## 箱ひげ図
+
+
+```{r boxplot, out.height=300, fig.asp = 0.5}
+df %>% 
+  ggplot() +
+  geom_boxplot(aes(x = group, y = xval, fill = group)) +
+  coord_flip()
+```
+
+
+---
+
+## 散布図
+
+XY の関係を調べる基本は散布図。
+
+```{r scatter, out.height=300}
+df %>% 
+  ggplot() +
+  geom_point(aes(x = xval, y = yval))
+```
+
+
+---
+
+## 色づけ
+
+```{r eval = FALSE}
+df %>% 
+  ggplot() +
+  geom_point(aes(x = xval, y = yval, _________))
+```
+```{r scatter2, out.height=300, echo = FALSE}
+df %>% 
+  ggplot() +
+  geom_point(aes(x = xval, y = yval, color = group))
+```
+
+
+---
+
+## 比較をしやすくする工夫
+
+```{r scatter3, out.height=300, fig.asp = 0.5}
+ggplot(df) +
+  geom_point(data = select(df, -group), aes(x = xval, y = yval), 
+             color = "gray70") +   # color は aes の外！
+  geom_point(aes(x = xval, y = yval, color = group)) + 
+  facet_wrap(~ group)
+```
+
+---
+
+## Penn World Table
+
+PWT を使って「所得収束 = 所得が高かった国ほど遅く成長する」を確認しよう。サンプルとしてOECD加盟国（2018年11月現在）のデータに限定する。
+
+```{r}
+oecd <- c("Australia", "Austria", "Belgium", "Canada", "Chile", 
+  "Czech Republic", "Denmark", "Estonia", "Finland", "France", 
+  "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Israel", 
+  "Italy", "Japan", "Republic of Korea", "Latvia", "Lithuania", 
+  "Luxembourg", "Mexico", "Netherlands", "New Zealand", "Norway", 
+  "Poland", "Portugal", "Slovakia", "Slovenia", "Spain", 
+  "Sweden", "Switzerland", "Turkey", "United Kingdom", 
+  "United States")
+```
+
+
+---
+
+```{r, include = FALSE}
+pwt90 <- haven::read_dta("~/Data/pwt90.dta")
+```
+```{r, eval = FALSE}
+pwt90 <- haven::read_dta("Data/pwt90.dta")
+```
+
+```{r}
+pwt_oecd <- pwt90 %>% 
+  filter(year >= 1965, country %in% oecd) %>% 
+  mutate(productivity = rgdpo / (emp * avh)) %>% 
+  group_by(country) %>% 
+  summarize(avg_growth = mean((log(productivity)) - lag(log(productivity)), na.rm = TRUE),
+            productivity_1965 = first(productivity)) %>% 
+  filter(!is.na(productivity_1965))
+head(pwt_oecd)
+```
+
+
+---
+
+```{r oecd1}
+ggplot(pwt_oecd, aes(x = productivity_1965, y = avg_growth)) +
+  geom_point() +
+  labs(
+    x = "Labor Productivity in 1965",
+    y = "Average Growth for 1965-2014"
+  )
+```
+
+
+---
+
+```{r oecd2, fig.height=250}
+ggplot(pwt_oecd, aes(x = productivity_1965, y = avg_growth)) +
+  geom_point() +
+{{  scale_x_log10()}} +  # 対数スケール
+  labs(x = "Labor Productivity in 1965",
+       y = "Average Growth for 1965-2014")
+```
+
+---
+
+```{r oecd3, fig.height=250}
+ggplot(pwt_oecd, aes(x = productivity_1965, y = avg_growth)) +
+  geom_point() +
+  scale_x_log10() + 
+{{  geom_smooth(method = lm)}} +   # 回帰直線 
+  labs(x = "Labor Productivity in 1965",
+       y = "Average Growth for 1965-2014")
+```
+
+
+---
+
+注目したい点にラベルをつける
+
+```{r}
+pwt_irr <- pwt_oecd %>% 
+  filter(productivity_1965 < 3 | rank(desc(productivity_1965)) < 4 | 
+           rank(desc(avg_growth)) < 4)
+pwt_irr
+```
+
+
+---
+
+**ggrepel** をインストール
+
+```{r, eval = FALSE}
+install.packages("ggrepel")
+library(ggrepel)
+```
+
+```{r, include=FALSE}
+library(ggrepel)
+```
+
+---
+
+```{r repel}
+ggplot(pwt_oecd, aes(x = productivity_1965, y = avg_growth)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE) +
+  geom_label_repel(data = pwt_irr, aes(label = country),
+                   box.padding = 1.5) + 
+  scale_x_log10() + 
+  labs(x = "Labor Productivity in 1965",
+       y = "Average Growth for 1965-2014")
+```
+
+
+---
+
+## 課題
+
+- <https://ggplot2.tidyverse.org/reference/ggsave.html>  
+  もしまだやっていなければ，`ggsave()` を使って画像を保存してみる。
+- <https://ggplot2.tidyverse.org/reference/index.html#section-themes>  
+  `theme` について勉強する。例えば，`theme_light()` を追加するとどうなるか？
+- <https://ggplot2.tidyverse.org/reference/index.html#section-layer-geoms>  
+  自分の知らない `geom_*` を勉強する。どのようなケースでそれが使えるか？
