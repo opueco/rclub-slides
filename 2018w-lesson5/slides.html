@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>R Club - Lesson 5</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/solid.css" integrity="sha384-osqezT+30O6N/vsMqwW8Ch6wKlMofqueuia2H7fePy42uC05rm1G+BUPSd2iBSJL" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/fontawesome.css" integrity="sha384-BzCy2fixOYd0HObpx3GMefNqdbA7Qjcc91RgYeDjrHTIEXqiF00jKvgQG0+zY/7I" crossorigin="anonymous">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Lesson 5
+## <a href="http://s.opur.club/18d4" class="uri">http://s.opur.club/18d4</a>
+### Kenji Sato
+### 2018/12/5 &amp; 12
+
+---
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    TeX: {
+      Macros: {
+      }
+    }
+  });
+</script>
+
+$$\let\oldhat\hat
+\renewcommand{\hat}[1]{\oldhat{\hspace{0pt} #1}}$$
+
+
+
+&lt;div style="margin-top: -2.5em"&gt;&lt;/div&gt;
+
+## Cheat Sheet
+
+&lt;https://www.rstudio.com/resources/cheatsheets/#stringr&gt;
+
+本日は，「Work with Strings Cheat Sheet」をお手元にご用意ください。
+
+
+---
+
+## トピック
+
+- R の文字列
+- stringr
+- 正規表現
+
+---
+
+## tidyverse
+
+- R プロジェクトを開く
+- **tidyverse** をロードする
+
+
+```r
+# 自宅でやる場合は，install.packages("tidyverse") を実行
+library(tidyverse)
+```
+
+---
+
+## 文字列
+
+「文字列」（string）というのは，文字（a, b, c,... 0, 1, 2,..., あ, い, ...など）の1つ以上の並びのことです。
+
+- Webサイト
+- SNS
+- 本
+- CSV ファイルなどなどなど
+
+こういったデータからうまく数値化できる情報を取り出して分析したい
+
+---
+
+## 文字列の表現
+
+R は一対の二重引用符(`" "`)または一重引用符（`' '`）で括られたテキストを「文字列」と認識します。
+
+次の2つのコマンドを実行して比較してください。
+
+
+
+```r
+3 + 4
+"3 + 4"
+```
+
+---
+
+## 引用符のネスト
+
+次のコードには問題があります。それは何でしょうか？
+
+```
+""Good morning", he said."
+```
+
+どのように解決すればいいでしょうか？
+
+--
+
+1つの答え： 1重引用符でくくる。
+
+
+```r
+'"Good morning", he said.'
+```
+
+```
+## [1] "\"Good morning\", he said."
+```
+
+出力では内側の二重引用符が `\"` と表記されていることに注意。
+
+---
+
+## エスケープシーケンス `\"`
+
+`"` は文字列の区切りに使われるので，「`"` という文字そのもの」を表す特別な方法が必要で，これが `\"` です。
+
+テキストの中に `"` と `'` が両方現れる場合にはエスケープシーケンスを使う必要があります。
+
+問題: 次のコードを修正し，テキストをオブジェクト `x` にアサインしてください。
+
+```
+x &lt;- ""That's a strange thing," remarked my companion."
+```
+
+
+---
+
+## `writeLines()`
+
+`print()` された結果はエスケープシーケンスがあると人間には読みにくいので，
+`writeLines()` という関数を使います。
+
+
+```r
+writeLines(x)
+```
+
+```
+## "That's a strange thing," remarked my companion.
+```
+
+
+次のコードを実行して結果を説明してください。
+
+
+```r
+writeLines(c("1. Knowledge of Literature.—Nil.",
+             "2.              Philosophy.—Nil.",
+             "3.              Astronomy.—Nil."))
+```
+
+---
+
+## その他のエスケープシーケンス
+
+
+```r
+writeLines("A Study In Scarlet\nArthur Conan Doyle")
+writeLines("Apple\t100\nOrange\t50")
+writeLines("C:\\Users\\Kenji\\Documents")
+writeLines(c("A \U27FA B", "\U1F600", "\U1F640"))
+```
+
+---
+
+## **stringr**
+
+**stringr** は文字列ベクトルを操作するための関数を集めたパッケージです。例えば，次のような関数が用意されています。
+
+- 長さ `str_length()` 
+- 連結 `str_c()`, `str_flatten()`
+- 分解 `str_split()`
+- 部分の抽出 `str_sub()`
+- 空白の除去 `str_trim()`, `str_squish()`
+- 大文字小文字の変換 `str_to_lower()`, `str_to_upper()`, `str_to_title()`
+
+---
+
+## 例 1
+
+
+```r
+(x &lt;- c("apple", "banana", "orange"))
+```
+
+```
+## [1] "apple"  "banana" "orange"
+```
+
+
+```r
+str_length(x)
+str_c(x, "s")
+str_flatten(x, collapse = ":")
+str_split("R is fun!", pattern = boundary("word"))
+str_sub(x, start = 2, end = 4)
+```
+
+すべて `str_` から始まるので，関数の名前を忘れてしまったら `str_` まで入力して TAB キーを押下しましょう。RStudio が候補を教えてくれます。
+
+---
+
+## 例 2
+
+
+```r
+(y &lt;- c("   Hello, world!  ", "Good        morning"))
+```
+
+```
+## [1] "   Hello, world!  "  "Good        morning"
+```
+
+```r
+str_trim(y)
+```
+
+```
+## [1] "Hello, world!"       "Good        morning"
+```
+
+```r
+(z &lt;- str_squish(y))
+```
+
+```
+## [1] "Hello, world!" "Good morning"
+```
+
+---
+
+## 例 3
+
+
+```r
+str_to_lower(z)
+```
+
+```
+## [1] "hello, world!" "good morning"
+```
+
+```r
+str_to_upper(z)
+```
+
+```
+## [1] "HELLO, WORLD!" "GOOD MORNING"
+```
+
+```r
+str_to_title(z)
+```
+
+```
+## [1] "Hello, World!" "Good Morning"
+```
+---
+
+## シャーロック・ホームズ
+
+グーテンベルクプロジェクトから A Study in Scarlet をダウンロードします。 **gutenbergr** をインストールして， `gutenbergr::gutenberg_donwload()` を使います。
+
+
+```r
+# install.packages("gutenbergr")
+study_in_scarlet &lt;- gutenbergr::gutenberg_download(244) 
+text &lt;- 
+  study_in_scarlet %&gt;% 
+  filter(row_number() &gt; 32) %&gt;% 
+  pull(text)
+```
+
+---
+
+## 単語の出現頻度: `table()`
+
+単語の出現頻度を調べてみましょう。 `base::table()` を使うと便利です。これは次のように使います。
+
+
+```r
+(x &lt;- sample(c("a", "b", "A"), size = 10, replace = TRUE))
+```
+
+```
+##  [1] "b" "A" "A" "b" "b" "b" "b" "a" "a" "b"
+```
+
+```r
+table(x)
+```
+
+```
+## x
+## a A b 
+## 2 2 6
+```
+
+---
+
+## 単語の出現頻度（つづき）
+
+テキストが与えられているときは， `str_split(pattern = boundary("word"))` で単語のベクトルに変換して，
+`str_to_lower()`で小文字に変換してから `table()` に適用します。
+
+
+```r
+sample.text &lt;- "This is a pen." 
+sample.vec &lt;-  unlist(str_split(sample.text, boundary("word")))
+sample.lower &lt;- str_to_lower(sample.vec)
+  
+table(sample.lower)
+```
+
+```
+## sample.lower
+##    a   is  pen this 
+##    1    1    1    1
+```
+
+`str_split()` は「リスト」を返すのでそれをベクトルに変換（`unlist()`）
+
+---
+
+## 緋色の研究の単語
+
+
+```r
+words &lt;- 
+  text %&gt;% 
+  str_to_lower() %&gt;% 
+  str_flatten(collapse = "\n") %&gt;% 
+  str_split(boundary("word"))
+```
+
+これに `table` を適用します。最後に `tibble()` に変形して，整列しておきます。
+
+
+```r
+freq &lt;- words %&gt;%
+  table() %&gt;% 
+  tibble(word = names(.), n = .) %&gt;%      ## . は左辺のデータ
+  mutate(n = as.integer(n)) %&gt;% 
+  arrange(desc(n))
+```
+
+---
+
+## 緋色の研究の単語
+
+
+```r
+View(freq)
+```
+
+
+```
+## # A tibble: 6 x 2
+##   word      n
+##   &lt;chr&gt; &lt;int&gt;
+## 1 the    2556
+## 2 and    1361
+## 3 of     1214
+## 4 to     1092
+## 5 a      1010
+## 6 i       901
+```
+
+
+---
+
+## クイズ
+
+(1) 以下のコードは何を出力するか？予想したあとに，実行しなさい。
+
+
+```r
+freq %&gt;% 
+  filter(rank(desc(n)) &lt;= 50) %&gt;% 
+  ggplot() + 
+  geom_col(aes(x = reorder(word, n), y = n)) + 
+  coord_flip()
+```
+
+
+(2) "sherlock", "holmes", "watson", "john" の出現頻度を調べなさい。
+
+---
+
+## 正規表現：動機
+
+例えば，次のようなテキストファイルがあったとしましょう。
+
+```
+Alice &lt;alice@example.com&gt;
+Bob &lt;bob@example.org&gt;
+Charlie &lt;charl@example.net&gt;
+```
+
+このテキストファイルを次のような表形式データに変換したいとすればどうしますか？
+
+| name    | user  | domain      |
+|---------|-------|-------------|
+| Alice   | alice | example.com |
+| Bob     | bob   | example.org |
+| Charlie | charl | example.net |
+
+---
+
+## 正規表現でできること
+
+上の例では，行ごとに内容は違うものの，次のような明確なパターンがありました。
+
+```
+name &lt;user@domain&gt;
+```
+
+このように一定のパターンに従う文字の並びを探し出して，処理を実行するのが正規表現の役割です。
+
+---
+
+## テキストエディタで実験
+
+RStudio で新しい「Text File」を作成し，
+
+```
+Alice &lt;alice@example.com&gt;
+Bob &lt;bob@example.org&gt;
+Charlie &lt;charl@example.net&gt;
+```
+
+をコピーしてください。
+
+---
+
+## テキストエディタで実験（つづき）
+
+Ctrl+F （Mac なら Comman+F） を押すと検索窓が現れますので，
+
+1) "Regex" にチェックを入れる  
+2) 左の入力フォーム（検索欄）に「`(.*) &lt;(.*)@(.*)&gt;`」  
+3) 右の入力フォーム（置換欄）に「`\1,\2,\3`」を入力
+
+して，「All」をクリックしてください。
+
+何が起こりましたか？
+
+---
+
+## 文字を表す正規表現
+
+| 探しもの       | regex   | R       |
+|----------------|---------|---------|
+| 特定の文字列   | `abc`   | `abc`   |
+| 任意の文字     | `.`     | `.`     |
+| 数字（その1）  | `[0-1]` | `[0-1]` |
+| 数字（その2）  | `\d`    | `\\d`   |
+| 記号を除く文字 | `\w`    | `\\w`   |
+| 記号           | `\W`    | `\\W`   |
+| ピリオド       | `\\.`   | `\.`    |
+
+
+正規表現 `\d+-\d+-\d+` は電話番号が記録されているデータがあったときに携帯電話の割合を調べるのに使えそうです
+
+---
+
+## グループ
+
+| グループ         | regex           |
+|------------------|-----------------|
+| どれか1つ        | `[abc]` など    |
+| どれでもない     | `[^abc]` など   |
+| この並びで現れる | `(abc)` など    |
+| いずれか         | `(ab`&amp;#x7C;`cd)` など  |
+
+
+---
+
+## 量を表す正規表現
+
+| 量               | regex   |
+|------------------|---------|
+| 0個以上          | `*`     |
+| 1個以上          | `+`     |
+| 0 or 1           | `?`     |
+| n個              | `{n}`   |
+| n個以上          | `{n,}`  |
+| n個以下          | `{,n}`  |
+| m個以上，n個以下 | `{m,n}` |
+
+---
+
+## 位置を表す正規表現
+
+| 位置     | regex | R     |
+|----------|-------|-------|
+| 行頭     | `^`   | `^`   |
+| 行末     | `$`   | `$`   |
+| 単語境界 | `\b`  | `\\b` |
+
+---
+
+## 後で使う
+
+丸括弧（`( )`）は丸括弧は，「後で使えるようにしたりするため」にも使われる。
+最初に現れた `( )` に該当する部分を `\1` で呼び出すことができます。
+
+
+さきほどの例では
+
+&lt;img src="images/ref.png" width="562" height="130" style="display: block; margin: auto;" /&gt;
+
+---
+
+## tibble にする
+
+それでは例題のデータを tibble に変換してみましょう。
+
+
+```r
+dta &lt;- "Alice &lt;alice@example.com&gt;
+Bob &lt;bob@example.org&gt;
+Charlie &lt;charl@example.net&gt;"
+# writeLines(dta)
+```
+
+
+```r
+address &lt;- 
+  dta %&gt;% 
+  str_split("\n") %&gt;% 
+  unlist()
+address
+```
+
+```
+## [1] "Alice &lt;alice@example.com&gt;"   "Bob &lt;bob@example.org&gt;"      
+## [3] "Charlie &lt;charl@example.net&gt;"
+```
+
+---
+
+## tibble にする（つづき）
+
+`str_match()` を使って，検索をします。
+
+
+```r
+match_matrix &lt;- 
+  address %&gt;% 
+  str_match("(.*) &lt;(.*)@(.*)&gt;") 
+match_matrix
+```
+
+```
+##      [,1]                          [,2]      [,3]   
+## [1,] "Alice &lt;alice@example.com&gt;"   "Alice"   "alice"
+## [2,] "Bob &lt;bob@example.org&gt;"       "Bob"     "bob"  
+## [3,] "Charlie &lt;charl@example.net&gt;" "Charlie" "charl"
+##      [,4]         
+## [1,] "example.com"
+## [2,] "example.org"
+## [3,] "example.net"
+```
+
+
+---
+
+## tibble にする（つづき）
+
+matrix を tibble に変換すれば完了です。
+
+
+```r
+users &lt;- as_tibble(match_matrix[, 2:4])
+names(users) &lt;- c("name", "user", "domain")
+users
+```
+
+```
+## # A tibble: 3 x 3
+##   name    user  domain     
+##   &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;      
+## 1 Alice   alice example.com
+## 2 Bob     bob   example.org
+## 3 Charlie charl example.net
+```
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
