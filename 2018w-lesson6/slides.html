@@ -1,0 +1,2448 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>R Club - Lesson 6</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/solid.css" integrity="sha384-osqezT+30O6N/vsMqwW8Ch6wKlMofqueuia2H7fePy42uC05rm1G+BUPSd2iBSJL" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/fontawesome.css" integrity="sha384-BzCy2fixOYd0HObpx3GMefNqdbA7Qjcc91RgYeDjrHTIEXqiF00jKvgQG0+zY/7I" crossorigin="anonymous">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Lesson 6
+## <a href="http://s.opur.club/18d6" class="uri">http://s.opur.club/18d6</a>
+### Kenji Sato
+### 2018/12/19 &amp; 26
+
+---
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    TeX: {
+      Macros: {
+      }
+    }
+  });
+</script>
+
+$$\let\oldhat\hat
+\renewcommand{\hat}[1]{\oldhat{\hspace{0pt} #1}}$$
+
+
+
+&lt;div style="margin-top: -2.5em"&gt;&lt;/div&gt;
+
+## トピック
+
+- HTML の基本
+- rvest による Web スクレイピング
+
+---
+
+## 準備
+
+
+```r
+install.packages("servr")
+install.packages("rvest")
+```
+
+---
+
+## HTML の基本構造
+
+ウェブサイトは HTML という書式ルールを使って書く。  
+次のような文書をしている。
+
+```html
+&lt;!DOCTYPE html&gt;
+&lt;html lang="ja"&gt;
+  &lt;head&gt;
+    &lt;!-- ここに設定情報など --&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;!-- ここにコンテンツ --&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+```
+
+
+---
+
+## タグ
+
+`&lt;tag&gt; ... &lt;/tag&gt;` は文書内の役割を表現する。 
+
+- `&lt;html&gt;&lt;/html&gt;` HTML文書
+- `&lt;head&gt;&lt;/head&gt;` ヘッダ
+- `&lt;body&gt;&lt;/body&gt;` 本文
+- `&lt;h1&gt;&lt;/h1&gt;`, `&lt;h2&gt;&lt;/h2&gt;` ... 見出し
+- `&lt;p&gt;&lt;/p&gt;` 段落
+- `&lt;a&gt;&lt;/a&gt;` ハイパーリンク, etc. etc....
+
+---
+
+## 作ってみよう! 
+
+R プロジェクトを開いて次のコマンドを実行
+
+
+```r
+dir.create("site")   # site フォルダ作成
+file.edit("site/index.html")  # index.html ファイル作成
+```
+
+「Terminal」で R を起動, web サーバーを立ち上げる。
+
+
+```r
+$ R
+...
+&gt; servr::httd("site")
+To stop the server, run servr::daemon_stop("140.....") or 
+restart your R session
+Serving the directory ..../site at http://127.0.0.1:4321
+```
+
+
+---
+
+## Web サーバーを立ち上げる
+
+Web サーバーというのは，ブラウザなどのソフトウェアから要求を受けてHTMLファイルなどの情報を送り返すサービスのこと。
+
+今，みなさんが作った `site` フォルダ上においたファイルをウェブブラウザで見ることができるようになりました: 
+
+&lt;http://127.0.0.1:4321&gt;
+
+`127.0.0.1` というのは自分自身のコンピュータを指す特別なアドレス。`:4321` はポート番号（普通は 80 だけどテストのため特別な番号を割り当てている）
+
+---
+
+サンプル
+
+```html
+&lt;!DOCTYPE html&gt;
+&lt;html lang="ja"&gt;
+  &lt;head&gt;
+    &lt;meta http-equiv="Content-Type" 
+          content="text/html; charset=UTF-8"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;R Club&lt;/h1&gt;
+    &lt;p&gt;
+      R Club は R の勉強会です。
+    &lt;/p&gt;
+    &lt;p&gt;
+      本日はウェブサイトの作り方を勉強しています。
+    &lt;/p&gt;
+    &lt;ul&gt;
+      &lt;li&gt;HTML&lt;/li&gt;
+      &lt;li&gt;CSS&lt;/li&gt;
+      &lt;li&gt;JavaScript&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+```
+
+---
+
+## リンク
+
+次のように修正（a タグの追加）してください。
+
+```html
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href="about-html.html"&gt;HTML&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;CSS&lt;/li&gt;
+  &lt;li&gt;JavaScript&lt;/li&gt;
+&lt;/ul&gt;
+```
+
+ファイルを作ります。
+
+
+```r
+file.edit("site/about-html.html")
+```
+
+`&lt;body&gt;&lt;/body&gt;` の中に次のように書いてください。
+
+---
+
+```html
+    &lt;table&gt;
+      &lt;thead&gt;
+        &lt;tr&gt;
+          &lt;th&gt;Tag&lt;/th&gt;
+          &lt;th&gt;役割&lt;/th&gt;
+        &lt;/tr&gt;
+      &lt;/thead&gt;
+      &lt;tbody&gt;
+        &lt;tr&gt;
+          &lt;td&gt;table&lt;/td&gt;
+          &lt;td&gt;表&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+          &lt;td&gt;tr&lt;/td&gt;
+          &lt;td&gt;表の行&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+          &lt;td&gt;th&lt;/td&gt;
+          &lt;td&gt;表のヘッダ&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+          &lt;td&gt;td&lt;/td&gt;
+          &lt;td&gt;表の項目&lt;/td&gt;
+        &lt;/tr&gt;
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+```
+
+
+---
+
+## 属性
+
+`&lt;a&gt;&lt;/a&gt;` に対する `href` のようなもの。
+
+`class` と `id` が特に重要。
+
+- `class` はグループ分け。複数のタグが同じ `class` 属性を持てる
+- `id` は一意な識別。複数のタグが同じ `id` 属性を持てない。
+
+
+
+```r
+file.edit("site/about-css.html")
+file.edit("site/style.css")
+```
+
+---
+
+`style.css`
+
+```
+.space {
+  height: 1200px;
+}
+```
+
+---
+
+`about-css.html` 
+
+```
+&lt;!DOCTYPE html&gt;
+&lt;html lang="ja"&gt;
+  &lt;head&gt;
+    &lt;meta http-equiv="Content-Type" content="text/html; charset=UTF-8"&gt;
+    &lt;link rel="stylesheet" type="text/css" href="style.css"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;CSS&lt;/h1&gt;
+    &lt;h2 id="basics"&gt;CSS の基本&lt;/h2&gt;
+    &lt;div class="space"&gt;&lt;/div&gt;&lt;!-- 無意味な空白 --&gt;
+    
+    &lt;h2 id="application"&gt;CSS の応用&lt;/h2&gt;
+    &lt;div class="space"&gt;&lt;/div&gt;&lt;!-- 無意味な空白 --&gt;
+    
+    &lt;h2 id="future"&gt;CSS の未来&lt;/h2&gt;
+    &lt;div class="space"&gt;&lt;/div&gt;&lt;!-- 無意味な空白 --&gt;
+    
+    &lt;a href="/"&gt;home&lt;/a&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+```
+
+&lt;http://127.0.0.1:4321#application&gt;
+
+
+---
+
+## CSS
+
+CSS はサイトのデザインをコントロールするもの。
+
+HTMLファイルの `&lt;head&gt;&lt;/head&gt;` の中に，
+
+```
+&lt;link rel="stylesheet" type="text/css" href="style.css"&gt;
+```
+
+といった記述をすることで，CSSファイルに定義されたスタイルが適用される。
+
+`style.css` に次の記述を追加してみよう。（1つ確認しては，消して次のものを追加する）
+
+```
+h1 { color: red; }
+h2 { color: red; }
+#application { color: red; }
+```
+
+---
+
+## CSS (続き)
+
+ドットは class, ハッシュタグは id 属性
+
+タグの階層構造はスペースでつなぐ（最下層だけでもOK）  
+複数のルールに同じデザインを適用するときはコンマ
+
+```
+section p .red {
+  color: red; /* などなど */
+}
+
+table {
+  border-collapse: collapse;
+}
+table th, table td {
+  border: solid 1px black;
+}
+```
+
+`about-html.html` にこのCSSを適用してみよう。
+
+---
+
+## 練習
+
+CSS の適用ルールを練習できるウェブアプリ
+
+&lt;http://flukeout.github.io/&gt;
+
+
+HTML 文書からデータを取得するときにも似たような考え方を使う。
+
+---
+
+## 要素の検証
+
+&lt;img src="images/inspect.png" width="474" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 要素の検証（つづき）
+
+&lt;img src="images/xpath.png" width="840" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## HTML 文書からデータ取得
+
+
+```r
+library(tidyverse)
+library(rvest)
+```
+
+マネジメント学類シラバス
+
+&lt;http://www0.osakafu-u.ac.jp/syllabus/list01.aspx?CD1=2B11&amp;CD2=03&gt;
+
+---
+
+## 注意！ DoS攻撃について
+
+**Denial of Service Attack**
+
+プログラム的にWebサーバーに大量にリクエストを送ってサーバーをダウンさせてしまう攻撃。
+Web スクレイピングには意図せずサーバーを攻撃してしまう危険があるので注意すること。
+
+
+```r
+Sys.sleep(3)
+```
+
+ゆっくり実行すること。
+
+robots.txt についても調べておくこと。
+
+
+---
+
+## 準備
+
+1. まずは要素を検証して
+2. HTML の構造を見極める
+3. データ取得の戦略を練る
+4. コーディングする
+
+---
+
+## rvest
+
+
+```r
+root &lt;- "http://www0.osakafu-u.ac.jp/syllabus"
+mng_url &lt;- file.path(root, "list01.aspx?CD1=2B11&amp;CD2=03")
+mng &lt;- read_html(mng_url)
+
+html_structure(mng)
+```
+
+```
+## &lt;html [xmlns]&gt;
+##   &lt;head#Head1&gt;
+##     &lt;title&gt;
+##       {text}
+##     &lt;link [rel, href, media, type]&gt;
+##     &lt;script [src, type]&gt;
+##   &lt;body&gt;
+##     {text}
+##     &lt;form#form1 [method, action]&gt;
+##       {text}
+##       &lt;input#__VIEWSTATE [type, name, value]&gt;
+##       &lt;input#__VIEWSTATEGENERATOR [type, name, value]&gt;
+##       &lt;div#container&gt;
+##         {text}
+##         {comment}
+##         {text}
+##         &lt;div#header&gt;
+##           {text}
+##           &lt;div.wapper&gt;
+##             {text}
+##             &lt;h1&gt;
+##               {text}
+##               &lt;a [href]&gt;
+##                 &lt;img [src, alt, width, height]&gt;
+##               &lt;br&gt;
+##               &lt;span&gt;
+##                 &lt;img [src, alt, width, height]&gt;
+##               {text}
+##             {text}
+##             &lt;a [href, target]&gt;
+##               {text}
+##             {text}
+##           {text}
+##         {text}
+##         {comment}
+##         {text}
+##         &lt;div#navigation&gt;
+##           {text}
+##           &lt;div.wapper&gt;
+##             {text}
+##             &lt;ul&gt;
+##               &lt;li&gt;
+##                 &lt;a [href]&gt;
+##                   {text}
+##               {text}
+##               &lt;li&gt;
+##                 &lt;a [href]&gt;
+##                   {text}
+##               {text}
+##               &lt;li&gt;
+##                 &lt;a [href]&gt;
+##                   {text}
+##               {text}
+##               &lt;li&gt;
+##                 &lt;a [href]&gt;
+##                   {text}
+##               {text}
+##           {text}
+##         {text}
+##         {comment}
+##         {text}
+##         &lt;div#contents&gt;
+##           {text}
+##           &lt;p#bc_navi&gt;
+##             {text}
+##             &lt;a [href]&gt;
+##               {text}
+##             {text}
+##             &lt;span#lbl_Pan&gt;
+##               {text}
+##             {text}
+##           {text}
+##           &lt;h2#icon_department_Csys&gt;
+##             &lt;strong&gt;
+##               {text}
+##             {text}
+##           {text}
+##           &lt;div.paragraph&gt;
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##                   &lt;li.li1&gt;
+##                     &lt;a [onclick, href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##             &lt;div.Csys&gt;
+##               {text}
+##               &lt;h3&gt;
+##                 &lt;span&gt;
+##                   &lt;strong&gt;
+##                     {text}
+##               {text}
+##               &lt;div&gt;
+##                 {text}
+##                 &lt;ol.ol1&gt;
+##                   &lt;li.li1&gt;
+##                     &lt;a [href]&gt;
+##                       {text}
+##                   {text}
+##             {text}
+##             &lt;p.pagetop&gt;
+##               &lt;a [href]&gt;
+##                 {text}
+##             {text}
+##           {text}
+##         {text}
+##       {text}
+##       {comment}
+##       {text}
+##       &lt;div#footer&gt;
+##         {text}
+##         &lt;div.wapper&gt;
+##           {text}
+##           &lt;p&gt;
+##             {text}
+##             &lt;strong&gt;
+##               {text}
+##             {text}
+##           {text}
+##         {text}
+##       {text}
+##     {text}
+```
+
+
+---
+
+## リンクのリスト
+
+
+```r
+links &lt;- html_nodes(mng, css = ".li1")
+head(links)
+```
+
+```
+## {xml_nodeset (6)}
+## [1] &lt;li class="li1"&gt;&lt;a href="list02.aspx?CD1=3&amp;amp;CD2=602"&gt; ...
+## [2] &lt;li class="li1"&gt;&lt;a href="list02.aspx?CD1=3&amp;amp;CD2=601"&gt; ...
+## [3] &lt;li class="li1"&gt;&lt;a onclick="popupWindow('Detail.aspx?CD= ...
+## [4] &lt;li class="li1"&gt;&lt;a onclick="popupWindow('Detail.aspx?CD= ...
+## [5] &lt;li class="li1"&gt;&lt;a onclick="popupWindow('Detail.aspx?CD= ...
+## [6] &lt;li class="li1"&gt;&lt;a onclick="popupWindow('Detail.aspx?CD= ...
+```
+
+---
+
+## リンクの下の a タグ
+
+
+
+```r
+link_atag &lt;- html_nodes(mng, css = ".li1 a")
+head(link_atag)
+```
+
+```
+## {xml_nodeset (6)}
+## [1] &lt;a href="list02.aspx?CD1=3&amp;amp;CD2=602"&gt;初年次ゼミナール一覧へ&lt;/a&gt;
+## [2] &lt;a href="list02.aspx?CD1=3&amp;amp;CD2=601"&gt;教養科目一覧へ&lt;/a&gt;
+## [3] &lt;a onclick="popupWindow('Detail.aspx?CD=262','',1100,620 ...
+## [4] &lt;a onclick="popupWindow('Detail.aspx?CD=274','',1100,620 ...
+## [5] &lt;a onclick="popupWindow('Detail.aspx?CD=527','',1100,620 ...
+## [6] &lt;a onclick="popupWindow('Detail.aspx?CD=543','',1100,620 ...
+```
+
+---
+
+## href 属性
+
+
+```r
+link_href &lt;- html_attr(link_atag, "href")
+head(link_href, 20)
+```
+
+```
+##  [1] "list02.aspx?CD1=3&amp;CD2=602" "list02.aspx?CD1=3&amp;CD2=601"
+##  [3] "detail.aspx?CD=262"        "detail.aspx?CD=274"       
+##  [5] "detail.aspx?CD=527"        "detail.aspx?CD=543"       
+##  [7] "detail.aspx?CD=796"        "detail.aspx?CD=812"       
+##  [9] "detail.aspx?CD=824"        "detail.aspx?CD=1084"      
+## [11] "detail.aspx?CD=1096"       "detail.aspx?CD=1352"      
+## [13] "detail.aspx?CD=1396"       "detail.aspx?CD=1408"      
+## [15] "detail.aspx?CD=1566"       "detail.aspx?CD=1578"      
+## [17] "detail.aspx?CD=266"        "detail.aspx?CD=278"       
+## [19] "detail.aspx?CD=535"        "detail.aspx?CD=547"
+```
+
+`list02` で始まっているのはページ内リンクなので，除去。
+
+
+```r
+syllabus_url &lt;- link_href[!startsWith(link_href, "list")]
+```
+
+---
+
+## 調べるアドレス一覧
+
+
+```r
+length(syllabus_url)
+```
+
+```
+## [1] 372
+```
+
+```r
+head(syllabus_url, 20)
+```
+
+```
+##  [1] "detail.aspx?CD=262"  "detail.aspx?CD=274" 
+##  [3] "detail.aspx?CD=527"  "detail.aspx?CD=543" 
+##  [5] "detail.aspx?CD=796"  "detail.aspx?CD=812" 
+##  [7] "detail.aspx?CD=824"  "detail.aspx?CD=1084"
+##  [9] "detail.aspx?CD=1096" "detail.aspx?CD=1352"
+## [11] "detail.aspx?CD=1396" "detail.aspx?CD=1408"
+## [13] "detail.aspx?CD=1566" "detail.aspx?CD=1578"
+## [15] "detail.aspx?CD=266"  "detail.aspx?CD=278" 
+## [17] "detail.aspx?CD=535"  "detail.aspx?CD=547" 
+## [19] "detail.aspx?CD=800"  "detail.aspx?CD=816"
+```
+
+---
+
+## 単一のページの構造
+
+ミクロ経済学入門 
+
+&lt;http://www0.osakafu-u.ac.jp/syllabus/detail.aspx?CD=5950&gt;
+
+ページトップにある表を取得するには？
+
+要素の検証をしてみよう！
+
+---
+
+## 例
+
+
+```r
+course &lt;- "http://www0.osakafu-u.ac.jp/syllabus/detail.aspx?CD=5950"
+course_html &lt;- read_html(course)
+course_tbl &lt;- html_node(course_html, "table")
+
+course_tbl %&gt;% 
+  html_node("#lbl_KAMOKU_NM") %&gt;% 
+  html_text()
+```
+
+```
+## [1] "ミクロ経済学入門"
+```
+
+```r
+course_tbl %&gt;% 
+  html_node("#lbl_GAKKI_NM") %&gt;% 
+  html_text()
+```
+
+```
+## [1] "前期授業"
+```
+
+---
+
+## 単一のページのデータ取得
+
+
+```r
+course_info &lt;- function(url) {
+  course_html &lt;- read_html(url)
+  course_tbl &lt;- html_node(course_html, "table")
+  
+  ids &lt;- c("#lbl_KAMOKU_NM", "#lbl_HAITO", "#lbl_WJ_NM",
+           "#lbl_GAKKI_NM", "#lbl_KYOIN_NM")
+  
+  vapply(ids, function(id) {
+    course_tbl %&gt;% html_node(id) %&gt;% html_text()
+  }, character(1))
+}
+
+course_info(course)
+```
+
+```
+##     #lbl_KAMOKU_NM         #lbl_HAITO         #lbl_WJ_NM 
+## "ミクロ経済学入門"                "1"             "火４" 
+##      #lbl_GAKKI_NM      #lbl_KYOIN_NM 
+##         "前期授業"       "宇野　浩司"
+```
+
+
+---
+
+## 全ページのデータ取得
+
+`for` ループを使う。`Sys.sleep()` を忘れないように！
+
+
+```r
+syllabus_sml &lt;- file.path(root, syllabus_url[201:205])
+len &lt;- length(syllabus_sml)
+
+result &lt;- tibble(
+  title = vector("character", len),
+  year = vector("character", len),
+  period = vector("character", len),
+  semester = vector("character", len),
+  professor = vector("character", len)
+)
+
+for (i in seq_along(syllabus_sml)) {
+  result[i, ] = course_info(syllabus_sml[i])
+  Sys.sleep(3)
+}
+```
+
+---
+
+## 結果
+
+
+```r
+result
+```
+
+```
+## # A tibble: 5 x 5
+##   title                  year  period semester professor 
+##   &lt;chr&gt;                  &lt;chr&gt; &lt;chr&gt;  &lt;chr&gt;    &lt;chr&gt;     
+## 1 マネジメント学類演習I  3     水４   通年授業 酒井　貴子
+## 2 マネジメント学類演習I  3     金４   通年授業 平林　直樹
+## 3 マネジメント学類演習II 4     水４   通年授業 韓　池    
+## 4 マネジメント学類演習II 4     水４   通年授業 日下　文男
+## 5 マネジメント学類演習II 4     火４   通年授業 鹿野　繁樹
+```
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
