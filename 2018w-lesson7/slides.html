@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>R Club - Lesson 7</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/solid.css" integrity="sha384-osqezT+30O6N/vsMqwW8Ch6wKlMofqueuia2H7fePy42uC05rm1G+BUPSd2iBSJL" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/fontawesome.css" integrity="sha384-BzCy2fixOYd0HObpx3GMefNqdbA7Qjcc91RgYeDjrHTIEXqiF00jKvgQG0+zY/7I" crossorigin="anonymous">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Lesson 7
+## <a href="http://s.opur.club/18d7" class="uri">http://s.opur.club/18d7</a>
+### Kenji Sato
+### 2019/1/9 &amp; 16
+
+---
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    TeX: {
+      Macros: {
+      }
+    }
+  });
+</script>
+
+$$\let\oldhat\hat
+\renewcommand{\hat}[1]{\oldhat{\hspace{0pt} #1}}$$
+
+
+
+&lt;div style="margin-top: -2.5em"&gt;&lt;/div&gt;
+
+## トピック
+
+- R によるモデルの基本
+
+---
+
+## 準備
+
+今週のトピックは 『Rではじめるデータサイエンス』 の第18章に依拠しています。
+
+
+
+```r
+library(tidyverse)
+library(modelr)
+library(broom)
+
+set.seed(3094)
+```
+
+---
+
+## サンプルデータ
+
+
+```r
+sim1
+```
+
+```
+## # A tibble: 30 x 3
+##        x     y    resid
+##    &lt;int&gt; &lt;dbl&gt;    &lt;dbl&gt;
+##  1     1  4.20 -2.07   
+##  2     1  7.51  1.24   
+##  3     1  2.13 -4.15   
+##  4     2  8.99  0.665  
+##  5     2 10.2   1.92   
+##  6     2 11.3   2.97   
+##  7     3  7.36 -3.02   
+##  8     3 10.5   0.130  
+##  9     3 10.5   0.136  
+## 10     4 12.4   0.00763
+## # ... with 20 more rows
+```
+
+---
+
+## テスト用のデータを取っておく
+
+通常，次のようにデータを分割する。
+
+- トレーニング用のデータをいじくりまわして仮説を立てる
+- 検証用のデータを使って仮説を検証する
+
+---
+
+## `resample_partition()`
+
+
+```r
+ex &lt;- resample_partition(sim1, c(test = 0.3, train = 0.7))
+as_data_frame(ex$train)
+```
+
+```
+## # A tibble: 22 x 3
+##        x     y    resid
+##    &lt;int&gt; &lt;dbl&gt;    &lt;dbl&gt;
+##  1     1  4.20 -2.07   
+##  2     1  7.51  1.24   
+##  3     1  2.13 -4.15   
+##  4     2  8.99  0.665  
+##  5     2 10.2   1.92   
+##  6     2 11.3   2.97   
+##  7     3  7.36 -3.02   
+##  8     3 10.5   0.130  
+##  9     3 10.5   0.136  
+## 10     4 12.4   0.00763
+## # ... with 12 more rows
+```
+
+---
+
+## 可視化
+
+
+```r
+train &lt;- as_data_frame(ex$train)
+ggplot(train) + geom_point(aes(x, y))
+```
+
+&lt;img src="slides_files/figure-html/unnamed-chunk-4-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+線形傾向がありそう？
+
+---
+
+線形モデル = `lm` (linear model)
+
+
+```r
+mod &lt;- lm(y ~ x, data = ex$train)
+tidy(mod)
+```
+
+```
+## # A tibble: 2 x 5
+##   term        estimate std.error statistic  p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## 1 (Intercept)     4.13     0.998      4.14 5.05e- 4
+## 2 x               2.12     0.172     12.3  8.82e-11
+```
+
+```r
+glance(mod)
+```
+
+```
+## # A tibble: 1 x 11
+##   r.squared adj.r.squared sigma statistic  p.value    df logLik
+## *     &lt;dbl&gt;         &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt;
+## 1     0.883         0.877  2.37      151. 8.82e-11     2  -49.2
+## # ... with 4 more variables: AIC &lt;dbl&gt;, BIC &lt;dbl&gt;,
+## #   deviance &lt;dbl&gt;, df.residual &lt;int&gt;
+```
+
+---
+
+## 読み方
+
+`y ~ x` という公式（フォーミュラ）を `lm` に入れると，
+
+$$
+y = a + bx + e
+$$
+
+という直線の方程式の `\(a\)` と `\(b\)` を探せという問題を解く。
+
+`\(e\)` は直線からの乖離で，こいつの2乗和を小さくすると当てはまりのよい直線を引ける。統計的な性質の話は難しいのでとりあえず無視する。
+
+さきほどの `tidy()` の結果によれば
+
+$$
+y = 4.1331113 + 2.1158788 x
+$$
+
+という直線がデータにもっともよく当てはまる。
+
+
+---
+
+## テスト
+
+
+```r
+test &lt;- as_data_frame(ex$test)
+ggplot(test) +
+  geom_point(aes(x, y)) +
+  geom_abline(intercept = mod$coefficients[[1]], 
+              slope = mod$coefficients[[2]])
+```
+
+&lt;img src="slides_files/figure-html/unnamed-chunk-6-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## modelr の便利な関数
+
+- `data_grid()`
+- `add_predictions()`
+- `add_residuals()`
+
+以下ではとりあえず training データだけに注目して作業しているとします。
+
+
+
+---
+
+## `data_grid()`
+
+`data_grid()` はデータの範囲を覆う格子を作る。
+
+
+```r
+tibble(
+  x = c(1, 2),
+  y = c(100, 200)
+) %&gt;% 
+data_grid(x, y)
+```
+
+```
+## # A tibble: 4 x 2
+##       x     y
+##   &lt;dbl&gt; &lt;dbl&gt;
+## 1     1   100
+## 2     1   200
+## 3     2   100
+## 4     2   200
+```
+
+---
+
+## `data_grid()`
+
+連続変数の grid を作るときは `seq_range()` と合わせる。
+
+
+```r
+tibble(
+  x = c(1, 2, 8),
+  y = c(0.1, 1.8, 3.9)
+) %&gt;% 
+data_grid(x, y = seq_range(y, 3))
+```
+
+```
+## # A tibble: 9 x 2
+##       x     y
+##   &lt;dbl&gt; &lt;dbl&gt;
+## 1     1   0.1
+## 2     1   2  
+## 3     1   3.9
+## 4     2   0.1
+## 5     2   2  
+## 6     2   3.9
+## 7     8   0.1
+## 8     8   2  
+## 9     8   3.9
+```
+
+---
+
+## `data_grid()`
+
+
+```r
+grid &lt;- sim1 %&gt;% 
+  data_grid(x)
+grid
+```
+
+```
+## # A tibble: 10 x 1
+##        x
+##    &lt;int&gt;
+##  1     1
+##  2     2
+##  3     3
+##  4     4
+##  5     5
+##  6     6
+##  7     7
+##  8     8
+##  9     9
+## 10    10
+```
+
+---
+
+## 線形モデル
+
+
+```r
+sim1_mod &lt;- lm(y ~ x, data = sim1)
+coef(sim1_mod)
+```
+
+```
+## (Intercept)           x 
+##    4.220822    2.051533
+```
+
+
+線形モデルだけなら簡単に予測値を計算できる。
+複雑なモデルにも共通な方法で予測を計算できるという意味で  `add_prediction()` が役に立つ。
+
+---
+
+## 予測
+
+
+```r
+grid &lt;- grid %&gt;% 
+  add_predictions(sim1_mod)
+grid
+```
+
+```
+## # A tibble: 10 x 2
+##        x  pred
+##    &lt;int&gt; &lt;dbl&gt;
+##  1     1  6.27
+##  2     2  8.32
+##  3     3 10.4 
+##  4     4 12.4 
+##  5     5 14.5 
+##  6     6 16.5 
+##  7     7 18.6 
+##  8     8 20.6 
+##  9     9 22.7 
+## 10    10 24.7
+```
+
+
+---
+
+## 可視化
+
+
+```r
+ggplot(sim1) +
+  geom_point(aes(x, y)) +
+  geom_line(aes(x, pred), data = grid)
+```
+
+&lt;img src="slides_files/figure-html/unnamed-chunk-12-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 残差
+
+
+```r
+sim1 &lt;- sim1 %&gt;% 
+  add_residuals(sim1_mod)
+sim1
+```
+
+```
+## # A tibble: 30 x 3
+##        x     y    resid
+##    &lt;int&gt; &lt;dbl&gt;    &lt;dbl&gt;
+##  1     1  4.20 -2.07   
+##  2     1  7.51  1.24   
+##  3     1  2.13 -4.15   
+##  4     2  8.99  0.665  
+##  5     2 10.2   1.92   
+##  6     2 11.3   2.97   
+##  7     3  7.36 -3.02   
+##  8     3 10.5   0.130  
+##  9     3 10.5   0.136  
+## 10     4 12.4   0.00763
+## # ... with 20 more rows
+```
+
+---
+
+## 残差のプロット
+
+
+```r
+ggplot(sim1, aes(x, resid)) + 
+  geom_ref_line(h = 0) + 
+  geom_point()
+```
+
+&lt;img src="slides_files/figure-html/unnamed-chunk-14-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 2次のモデル
+
+
+```r
+qsim &lt;- tibble(
+  x = rnorm(20),
+  y = x ^ 2 + 3 * x + 2 + rnorm(20, sd = 1.5)
+)
+ggplot(qsim) + geom_point(aes(x, y))
+```
+
+&lt;img src="slides_files/figure-html/unnamed-chunk-15-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 回帰モデル
+
+2次の項は `I(x ^ 2)` で表す。
+
+
+```r
+mod_lin &lt;- lm(y ~ x, data = qsim)
+mod_quad &lt;- lm(y ~ I(x ^ 2) + x, data = qsim)
+```
+
+
+`\(R^2\)` は `rsquare()` でさくっと表示できる。
+
+
+```r
+rsquare(mod_lin, qsim)
+```
+
+```
+## [1] 0.7770952
+```
+
+```r
+rsquare(mod_quad, qsim)
+```
+
+```
+## [1] 0.9029015
+```
+
+---
+
+## `spread_predictions()`
+
+
+```r
+qsim %&gt;% 
+  data_grid(x) %&gt;% 
+  spread_predictions(mod_lin, mod_quad)
+```
+
+```
+## # A tibble: 20 x 3
+##          x mod_lin mod_quad
+##      &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;
+##  1 -2.83    -4.75   -0.850 
+##  2 -2.16    -2.71   -1.50  
+##  3 -2.14    -2.67   -1.50  
+##  4 -1.88    -1.89   -1.52  
+##  5 -1.65    -1.19   -1.42  
+##  6 -1.48    -0.674  -1.29  
+##  7 -1.16     0.291  -0.892 
+##  8 -0.681    1.72    0.0530
+##  9 -0.636    1.86    0.164 
+## 10 -0.405    2.55    0.795 
+## 11 -0.308    2.84    1.09  
+## 12  0.0805   4.01    2.44  
+## 13  0.163    4.26    2.77  
+## 14  0.579    5.51    4.60  
+## 15  0.791    6.15    5.66  
+## 16  0.957    6.65    6.54  
+## 17  0.993    6.76    6.74  
+## 18  1.40     7.99    9.19  
+## 19  1.84     9.30   12.1   
+## 20  1.85     9.34   12.2
+```
+
+
+---
+
+## `gather_predictions()`
+
+
+```r
+qsim_pred &lt;- qsim %&gt;% 
+  data_grid(x) %&gt;% 
+  gather_predictions(mod_lin, mod_quad)
+qsim_pred
+```
+
+```
+## # A tibble: 40 x 3
+##    model        x   pred
+##    &lt;chr&gt;    &lt;dbl&gt;  &lt;dbl&gt;
+##  1 mod_lin -2.83  -4.75 
+##  2 mod_lin -2.16  -2.71 
+##  3 mod_lin -2.14  -2.67 
+##  4 mod_lin -1.88  -1.89 
+##  5 mod_lin -1.65  -1.19 
+##  6 mod_lin -1.48  -0.674
+##  7 mod_lin -1.16   0.291
+##  8 mod_lin -0.681  1.72 
+##  9 mod_lin -0.636  1.86 
+## 10 mod_lin -0.405  2.55 
+## # ... with 30 more rows
+```
+
+---
+
+## 可視化: 予測
+
+
+```r
+ggplot(qsim_pred) +
+  geom_line(aes(x = x, y = pred, color = model)) +
+  geom_point(aes(x, y), data = qsim)
+```
+
+&lt;img src="slides_files/figure-html/unnamed-chunk-20-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+---
+
+## `gather_residuals()`
+
+
+```r
+qsim_resid &lt;- qsim %&gt;% 
+  gather_residuals(mod_lin, mod_quad)
+qsim_resid
+```
+
+```
+## # A tibble: 40 x 4
+##    model        x       y  resid
+##    &lt;chr&gt;    &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;
+##  1 mod_lin  0.163   3.80  -0.461
+##  2 mod_lin -2.14   -4.45  -1.78 
+##  3 mod_lin -0.681  -1.48  -3.20 
+##  4 mod_lin -1.65   -2.53  -1.35 
+##  5 mod_lin -2.83   -0.153  4.60 
+##  6 mod_lin -0.405  -1.82  -4.37 
+##  7 mod_lin  1.84   13.4    4.11 
+##  8 mod_lin  1.85   11.9    2.52 
+##  9 mod_lin -0.636   2.73   0.872
+## 10 mod_lin -2.16    0.350  3.06 
+## # ... with 30 more rows
+```
+
+---
+
+## 可視化: 残差
+
+
+```r
+ggplot(qsim_resid) + 
+  geom_point(aes(x, resid, color = model)) +
+  geom_ref_line(h = 0) + facet_grid(~ model)
+```
+
+&lt;img src="slides_files/figure-html/unnamed-chunk-22-1.png" height="280" style="display: block; margin: auto;" /&gt;
+
+線形モデルの残差は両端が大きく，モデルで捉えきれていない傾向が残っている。
+
+---
+
+## まとめ
+
+- 単一のモデルを分析する方法（線形，2次）
+- `broom::tidy()`, `broom::glance()`
+- 予測と残差の計算方法
+  - `add_predictions()`, `spread_predictions()`, `gather_predictions()`
+  - `add_residuals()`, `spread_residuals()`, `gather_residuals()`
+- 複数のモデルを1つのデータフレームにまとめて比べる
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

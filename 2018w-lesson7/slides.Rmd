@@ -1,0 +1,338 @@
+---
+title: "R Club - Lesson 7"
+author: Kenji Sato
+date: 2019/1/9 & 16
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: 
+      - "../asset/remark-css/style.css"
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+    pandoc_args: [
+      "--include-before-body", "../asset/mathjax-macro.md"
+    ]
+subtitle: http://s.opur.club/18d7
+header-includes: 
+    - <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/solid.css" integrity="sha384-osqezT+30O6N/vsMqwW8Ch6wKlMofqueuia2H7fePy42uC05rm1G+BUPSd2iBSJL" crossorigin="anonymous">
+    - <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/fontawesome.css" integrity="sha384-BzCy2fixOYd0HObpx3GMefNqdbA7Qjcc91RgYeDjrHTIEXqiF00jKvgQG0+zY/7I" crossorigin="anonymous">
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  fig.align = 'center',
+  out.height = 350,
+  fig.asp = 1/1.618,
+  dpi = 196,
+  prompt = FALSE
+)
+options(width = 63)
+```
+
+<div style="margin-top: -2.5em"></div>
+
+## トピック
+
+- R によるモデルの基本
+
+---
+
+## 準備
+
+今週のトピックは 『Rではじめるデータサイエンス』 の第18章に依拠しています。
+
+
+```{r, message=FALSE}
+library(tidyverse)
+library(modelr)
+library(broom)
+
+set.seed(3094)
+```
+
+---
+
+## サンプルデータ
+
+```{r}
+sim1
+```
+
+---
+
+## テスト用のデータを取っておく
+
+通常，次のようにデータを分割する。
+
+- トレーニング用のデータをいじくりまわして仮説を立てる
+- 検証用のデータを使って仮説を検証する
+
+---
+
+## `resample_partition()`
+
+```{r}
+ex <- resample_partition(sim1, c(test = 0.3, train = 0.7))
+as_data_frame(ex$train)
+```
+
+---
+
+## 可視化
+
+```{r}
+train <- as_data_frame(ex$train)
+ggplot(train) + geom_point(aes(x, y))
+```
+
+線形傾向がありそう？
+
+---
+
+線形モデル = `lm` (linear model)
+
+```{r}
+mod <- lm(y ~ x, data = ex$train)
+tidy(mod)
+glance(mod)
+```
+
+---
+
+## 読み方
+
+`y ~ x` という公式（フォーミュラ）を `lm` に入れると，
+
+$$
+y = a + bx + e
+$$
+
+という直線の方程式の $a$ と $b$ を探せという問題を解く。
+
+$e$ は直線からの乖離で，こいつの2乗和を小さくすると当てはまりのよい直線を引ける。統計的な性質の話は難しいのでとりあえず無視する。
+
+さきほどの `tidy()` の結果によれば
+
+$$
+y = `r mod$coefficients[[1]]` + `r mod$coefficients[[2]]` x
+$$
+
+という直線がデータにもっともよく当てはまる。
+
+
+---
+
+## テスト
+
+```{r}
+test <- as_data_frame(ex$test)
+ggplot(test) +
+  geom_point(aes(x, y)) +
+  geom_abline(intercept = mod$coefficients[[1]], 
+              slope = mod$coefficients[[2]])
+```
+
+
+---
+
+## modelr の便利な関数
+
+- `data_grid()`
+- `add_predictions()`
+- `add_residuals()`
+
+以下ではとりあえず training データだけに注目して作業しているとします。
+
+
+
+---
+
+## `data_grid()`
+
+`data_grid()` はデータの範囲を覆う格子を作る。
+
+```{r}
+tibble(
+  x = c(1, 2),
+  y = c(100, 200)
+) %>% 
+data_grid(x, y)
+```
+
+---
+
+## `data_grid()`
+
+連続変数の grid を作るときは `seq_range()` と合わせる。
+
+```{r}
+tibble(
+  x = c(1, 2, 8),
+  y = c(0.1, 1.8, 3.9)
+) %>% 
+data_grid(x, y = seq_range(y, 3))
+```
+
+---
+
+## `data_grid()`
+
+```{r}
+grid <- sim1 %>% 
+  data_grid(x)
+grid
+```
+
+---
+
+## 線形モデル
+
+```{r}
+sim1_mod <- lm(y ~ x, data = sim1)
+coef(sim1_mod)
+```
+
+
+線形モデルだけなら簡単に予測値を計算できる。
+複雑なモデルにも共通な方法で予測を計算できるという意味で  `add_prediction()` が役に立つ。
+
+---
+
+## 予測
+
+```{r}
+grid <- grid %>% 
+  add_predictions(sim1_mod)
+grid
+```
+
+
+---
+
+## 可視化
+
+```{r}
+ggplot(sim1) +
+  geom_point(aes(x, y)) +
+  geom_line(aes(x, pred), data = grid)
+```
+
+---
+
+## 残差
+
+```{r}
+sim1 <- sim1 %>% 
+  add_residuals(sim1_mod)
+sim1
+```
+
+---
+
+## 残差のプロット
+
+```{r}
+ggplot(sim1, aes(x, resid)) + 
+  geom_ref_line(h = 0) + 
+  geom_point()
+```
+
+---
+
+## 2次のモデル
+
+```{r}
+qsim <- tibble(
+  x = rnorm(20),
+  y = x ^ 2 + 3 * x + 2 + rnorm(20, sd = 1.5)
+)
+ggplot(qsim) + geom_point(aes(x, y))
+```
+
+---
+
+## 回帰モデル
+
+2次の項は `I(x ^ 2)` で表す。
+
+```{r}
+mod_lin <- lm(y ~ x, data = qsim)
+mod_quad <- lm(y ~ I(x ^ 2) + x, data = qsim)
+```
+
+
+$R^2$ は `rsquare()` でさくっと表示できる。
+
+```{r}
+rsquare(mod_lin, qsim)
+rsquare(mod_quad, qsim)
+```
+
+---
+
+## `spread_predictions()`
+
+```{r}
+qsim %>% 
+  data_grid(x) %>% 
+  spread_predictions(mod_lin, mod_quad)
+```
+
+
+---
+
+## `gather_predictions()`
+
+```{r}
+qsim_pred <- qsim %>% 
+  data_grid(x) %>% 
+  gather_predictions(mod_lin, mod_quad)
+qsim_pred
+```
+
+---
+
+## 可視化: 予測
+
+```{r}
+ggplot(qsim_pred) +
+  geom_line(aes(x = x, y = pred, color = model)) +
+  geom_point(aes(x, y), data = qsim)
+```
+
+---
+
+## `gather_residuals()`
+
+```{r}
+qsim_resid <- qsim %>% 
+  gather_residuals(mod_lin, mod_quad)
+qsim_resid
+```
+
+---
+
+## 可視化: 残差
+
+```{r, out.height=280, fig.asp=0.4}
+ggplot(qsim_resid) + 
+  geom_point(aes(x, resid, color = model)) +
+  geom_ref_line(h = 0) + facet_grid(~ model)
+```
+
+線形モデルの残差は両端が大きく，モデルで捉えきれていない傾向が残っている。
+
+---
+
+## まとめ
+
+- 単一のモデルを分析する方法（線形，2次）
+- `broom::tidy()`, `broom::glance()`
+- 予測と残差の計算方法
+  - `add_predictions()`, `spread_predictions()`, `gather_predictions()`
+  - `add_residuals()`, `spread_residuals()`, `gather_residuals()`
+- 複数のモデルを1つのデータフレームにまとめて比べる
