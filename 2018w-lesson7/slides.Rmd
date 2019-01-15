@@ -46,7 +46,7 @@ options(width = 63)
 今週のトピックは 『Rではじめるデータサイエンス』 の第18章に依拠しています。
 
 
-```{r, message=FALSE}
+```{r, message=FALSE, cache=FALSE}
 library(tidyverse)
 library(modelr)
 library(broom)
