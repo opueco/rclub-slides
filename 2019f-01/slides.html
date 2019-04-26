@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club - Day 01</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Day 01
+## <a href="http://s.opur.club/19d1" class="uri">http://s.opur.club/19d1</a>
+### Kenji Sato
+### 2019/5/8
+
+---
+
+
+
+
+## Who I am
+
+佐藤健治
+- マネ類教員
+- 主担当：マクロ経済学
+- メール：sato@eco.osakafu-u.ac.jp
+    - ただし人に聞かれたくない質問以外は Slack で（後述）
+
+---
+
+## How I use R
+
+- 講義スライド作成
+- 簡単なウェブサイト
+    - [kenjisato.jp](https://kenjisato.jp)
+    - [opur.club](https://opur.club) ... 
+- 講義資料作成 
+    - [経済動学](https://led.kenjisato.jp)
+    - [大学院マクロ入門](https://kenjisato.github.io/intro-macro/doc/r/optimal_growth_dp.html)
+- ときどき簡単なデータ分析
+
+---
+
+## Slack
+
+OPU R Club のための Slack チーム  
+時間外の質問はこちらへどうぞ。答えられる人が答えてください。
+
+.center.big[
+
+[s.opur.club/join-slack](http://s.opur.club/join-slack)
+
+]
+
+資料を更新したときに通知したり，急なお休みの連絡にも使います。
+今，JOIN していただけると助かります。
+
+---
+
+## テキストと計画
+
+[奥村晴彦『Rで楽しむ統計』](https://www.amazon.co.jp/R%E3%81%A7%E6%A5%BD%E3%81%97%E3%82%80%E7%B5%B1%E8%A8%88-Wonderful-R-%E5%A5%A5%E6%9D%91-%E6%99%B4%E5%BD%A6/dp/4320112415)
+
+R にも流行があります。この本では長年変わらぬ部分だけが紹介されているので安心感があります。少しマニアックな内容がふんだんに盛り込まれていますが，よく分からない部分にこだわらずにどんどん進みましょう。
+
+RClub の進行計画は [このGoogle Sheet](https://docs.google.com/spreadsheets/d/1CIMRqvGLlA9kMO9xhKOiHc6ONSgAHI-PSEoeX8mCoLQ/edit?usp=sharing) を確認してください。  
+
+
+---
+
+## &lt;i class="fab fa-windows"&gt;&lt;/i&gt; → rstudio → ⏎
+
+&lt;img src="images/rstudio.png" width="3837" style="display: block; margin: auto;" /&gt;
+
+---
+
+class: fit
+background-image: url("images/rstudio-console.png")
+
+---
+
+class: fit
+background-image: url("images/rstudio-files.png")
+
+
+---
+
+## スライド・テキストの読み方
+
+「コンソールに入力して実行してください」というときは「`&gt;`」を付けています。この記号は「プロンプト」といいます。これは入力しないでください。
+
+
+```r
+&gt; plot(exp)
+```
+
+--
+
+コマンドが1行で完結していない場合には「`+`」記号が付きます。これも入力しないでください。
+
+
+```r
+&gt; 10 -
++   (3 + 9)
+```
+
+コピペはせずに，コマンドを筋肉に覚えさせよう。
+
+---
+
+## 試しにやってみよう
+
+`#` の後は「コメント」です。打ち込む必要はありません。
+
+
+```r
+&gt; 10 + 5       # 足し算
+&gt; 1 - 3        # 引き算
+&gt; 3 * 0.33     # 掛け算
+&gt; 1 / 4        # 割り算
+&gt; 2 ^ 10       # べき乗
+&gt; 10 %/% 3     # 商
+&gt; 10 %% 3      # 剰余
+&gt; 1 + 2 * 2    # 掛け算・割り算は足し算引き算より優先
+&gt; (1 + 2) * 2  # 括弧 ( ) で計算の優先順序を変更 
+```
+
+---
+
+## 変数
+
+$$
+\frac{1 + 2 + 3 + 4 + 5}{(0.5^2) / 2}
+$$
+
+
+```r
+&gt; 分子 = 1 + 2 + 3 + 4 + 5
+&gt; 分母 = (0.5 ^ 2) / 2
+&gt; 分子 / 分母
+```
+
+```
+## [1] 120
+```
+
+
+--
+
+
+```r
+名前 = 式  # または
+名前 &lt;- 式  
+```
+
+で値，計算結果に名前を付けられる。変数またはオブジェクト
+
+---
+
+## ベクトル
+
+
+```r
+&gt; (x = 5:70)      # この括弧は「代入した後に値を表示する」の意味
+```
+
+```
+##  [1]  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+## [20] 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42
+## [39] 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61
+## [58] 62 63 64 65 66 67 68 69 70
+```
+
+
+
+```r
+&gt; 1:10
+```
+
+```
+##  [1]  1  2  3  4  5  6  7  8  9 10
+```
+
+```r
+&gt; sum(1:100)
+```
+
+```
+## [1] 5050
+```
+
+
+---
+
+## 乱数（あるいは疑似乱数）
+
+`rnorm(n, ...)` は正規分布に従う乱数を `n` 個作る。  
+`hist()` はヒストグラム
+
+
+```r
+&gt; m = 35
+&gt; s = 2
+&gt; x = rnorm(100000, mean = m, sd = 2)
+&gt; hist(x, col="gray")
+```
+
+&lt;img src="slides_files/figure-html/hist-1.png" width="300" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 確率分布関連の関数の命名規則
+
+
+```r
+d.... =&gt; 密度関数 (density)
+p.... =&gt; 累積分布関数 (probability)
+q.... =&gt; 分位関数 (quantile)
+r.... =&gt; 疑似乱数生成器 (random)
+```
+
+正規分布（normal distribution）の例
+
+```r
+dnorm(0)      # 密度関数の x = 0 の値
+pnorm(0)      # 累積分布関数の x = 0 の値
+qnorm(0.975)  # 累積分布関数が 0.975 になる x の値
+rnorm(2)      # 正規乱数を2個生成
+```
+
+---
+
+## 正規分布に従う乱数: rnorm(n)
+
+&lt;img src="slides_files/figure-html/rnorm-1.png" width="700" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 累積分布関数: pnorm(q)
+
+&lt;img src="slides_files/figure-html/pnorm-1.png" width="700" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## 逆累積分布関数: qnorm(p)
+
+&lt;img src="slides_files/figure-html/qnorm-1.png" width="700" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 検定のアイデア
+
+&lt;img src="slides_files/figure-html/stattest-1.png" width="700" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 検定のアイデア
+
+特定の仮定（「帰無仮説」）のもとで，正規分布にしたがうはずのデータがピンクのところに入る  
+→ 確率が低い現象が起きた  
+→ 仮定が間違っているのではないか？
+
+
+現実のデータが「正規分布に従うことが分かっている」なんてことがあるのか？
+
+---
+
+## 標準化と中心極限定理
+
+`\(X_i\)`, `\(i=1,\dots,n\)` が平均 `\(\mu\)`, 分散 `\(\sigma^2\)` なる同一の分布から独立に抽出されていれば，標本平均 
+
+$$
+\bar{X} = \frac{1}{n} \sum_{i}^n X_i
+$$
+は平均 `\(\mu\)` で分散は `\(\sigma^2 / n\)` である。（覚えてしまおう！）
+
+`\(n\)` が大きければ， `\(\bar X\)` から平均を引いて標準偏差で割った
+
+$$
+Z = \frac{\bar{X} - \mu}{\sqrt{\sigma^2 / n}}
+$$
+
+は標準正規分布（平均ゼロ，分散1）に似ている。
+
+---
+
+## 試してみよう
+
+- [0, 1) 上の一様分布: 平均は 1/2, 分散は 1/12 
+- `runif(n)` 上の一様分布に従う乱数を生成。標本平均は `mean()` で計算できる
+
+
+```r
+n = 10000
+z = (mean(runif(n)) - 0.5) / sqrt((1/12) / n)
+z
+```
+
+```
+## [1] -0.02774194
+```
+
+これで `\(Z\)` の1つの実現値ができる。繰り返すのはコンピュータの得意技。R の `replicate()` が使える。
+
+
+---
+
+## 試してみよう（続き）
+
+`replicate()` を使った繰り返し処理
+
+
+```r
+Z = replicate(1000, mean(runif(n)) - 0.5) / sqrt((1/12) / n)
+head(Z)
+```
+
+```
+## [1] -0.6773986 -1.0273814 -0.2063832 -1.9439566  1.1021645
+## [6] -1.8345640
+```
+
+これで長さ `\(\bar X\)` という確率変数を標準化した `\(Z\)` の 1,000個の実現値を作れた。
+
+
+---
+
+## 試してみよう（最後）
+
+
+```r
+hist(Z, col = "gray")  # 正規分布っぽい形をしているはず
+```
+
+&lt;img src="slides_files/figure-html/hist2-1.png" width="400" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## シミュレーションと実データ分析
+
+- シミュレーション
+   - 人工的にデータ（確率変数）を作って数学モデルの振る舞いを調べること
+- 実データ分析
+   - 実験や観察から実際に収集したデータを分析すること
+
+
+本当は実データの分析をしたいのだけど，技法を学ぶためにシミュレーションをすることも沢山あります。
+
+---
+
+## R のヘルプ
+
+
+```r
+?mean
+```
+
+
+---
+
+## データフレーム (奥村 p. 6)
+
+表の「列」を並べたもの。
+
+
+```r
+身長 = c(168.5, 172.8, 159.0)
+体重 = c(69.5, 75.0, 56.5)
+X = data.frame(身長, 体重)
+X
+```
+
+```
+##    身長 体重
+## 1 168.5 69.5
+## 2 172.8 75.0
+## 3 159.0 56.5
+```
+
+```r
+X$身長
+```
+
+```
+## [1] 168.5 172.8 159.0
+```
+
+---
+
+## データフレーム（続き）
+
+列の追加
+
+
+```r
+X$BMI = round(X$体重 / (X$身長 / 100)^2)
+X
+```
+
+```
+##    身長 体重 BMI
+## 1 168.5 69.5  24
+## 2 172.8 75.0  25
+## 3 159.0 56.5  22
+```
+
+---
+
+## パッケージ（Excelファイル）
+
+データフレームを手で打ち込んだりせずに，CSVとかエクセルファイルを使うことが多い。
+
+エクセルを読み込むパッケージをインストール
+
+
+```r
+&gt; install.packages("readxl")
+```
+
+エクセルファイルの読み込み
+
+
+```r
+&gt; library(readxl)
+&gt; read_excel("test.xlsx")
+```
+
+---
+
+## 試してみよう
+
+次のようなエクセルファイル（test.xlsx）を作ってください。
+
+| ID | Math | English | Physics |
+|----|------|---------|---------|
+| 1  | 90   | 60      | 95      |
+| 2  | 80   | 90      | 90      |
+| 3  | 70   | 70      | 90      |
+
+次のコマンドで表示されるフォルダにファイルを保存して，
+
+```r
+getwd()
+```
+
+先程の読み込みコードを実行しましょう。
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
