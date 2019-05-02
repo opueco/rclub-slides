@@ -430,3 +430,14 @@ getwd()
 ```
 
 先程の読み込みコードを実行しましょう。
+
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day01")
+```
+チュートリアルがはじまるよ。
