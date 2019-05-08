@@ -1,6 +1,6 @@
 ---
 title: R Club - Day 01
-subtitle: "http://s.opur.club/19d1"
+subtitle: "https://opueco.github.io/rclub-slides/2019f-01/slides.html"
 author: Kenji Sato
 date: 2019/5/8
 output:
