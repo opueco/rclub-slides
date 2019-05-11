@@ -1,0 +1,411 @@
+---
+title: R Club - Day 02
+subtitle: "https://opueco.github.io/rclub-slides/2019f-02/slides.html"
+author: Kenji Sato
+date: 2019/5/15
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: ["../asset/remark-css/style.css"]
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+header-includes: ['<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">', '<link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">']
+---
+
+```{r setup, include=FALSE}
+set.seed(100)
+knitr::opts_chunk$set(fig.align = "center")
+options(width = 63)
+```
+
+## 復習
+
+- R を電卓として使う
+   - `2 ^ 20`
+   - `exp(2)`
+- R でヒストグラムを書く
+   - `hist(rnorm(1000))`
+
+
+---
+
+## データの分類
+
+**質的変数（カテゴリカル変数）** 
+
+- 名義尺度（nominal scale）
+- 順序尺度（ordinal scale）
+
+**量的変数**
+
+- 比例尺度（ratio scale）
+- 間隔尺度（interval scale）
+
+---
+
+## 基本的なグラフ
+
+- 散布図 (scatter plot)
+- 折れ線グラフ　
+- 棒グラフ
+- 箱ひげ図
+
+---
+
+```{r scatter, out.height=380, dpi=120}
+# 散布図
+x <- runif(100)
+y <- 0.8 * x + 0.1 * rnorm(100)
+plot(x, y, pch=16)
+```
+
+---
+
+```{r lineplot, out.height=380, dpi=120}
+# 折れ線
+t <- 0:50
+shocks <- 0.2 * runif(length(t))
+y <- exp(0.05 * t) * (1 + shocks)
+plot(t, y, type="l")
+points(t, y, type="p", pch=16)
+```
+
+---
+
+```{r barchart, out.height=380, dpi=120}
+# 棒グラフ
+grades <- c("A+", "A", "B", "C")
+grades <- factor(grades, levels = grades)
+prob <- c(0.05, 0.20, 0.5, 0.25)
+students <- sample(grades, 100, replace = TRUE, prob = prob)
+barplot(table(students))
+```
+
+---
+
+## 問題 (1)
+
+あるチームの年齢構成は
+
+15, 17, 19, 19, 21, 22, 23, 70
+
+である。平均年齢を計算しなさい。また，中央値を計算しなさい。
+
+---
+
+## 問題 (2)
+
+過去5年間のGDP成長率は
+
+1.2%, 2.3%, 1.8%, 0.9%, 1.3%
+
+である。この期間の平均成長率を計算しなさい。
+
+---
+
+## 代表値
+
+データはばらばらの値を取る。データの「中心」をうまく反映するような典型的な値を代表値という。
+
+例えば平均，中央値，最頻値などが典型的な代表値である。
+
+平均には通常の算術平均だけでなく，幾何平均や調和平均などがあり，状況に応じて使い分ける。
+
+
+```r
+mean(X)             # 算術平均
+median(X)           # 中央値
+exp(mean(log(X)))   # 幾何平均
+1/mean(1/X)         # 調和平均
+```
+---
+
+## 関数を作ってみよう (1/2)
+
+`exp()` とか `log()` とか `mean()` のような関数を組み合わせるといろいろなことができますが，構成が複雑になると扱いが難しくなります。
+
+関数にも名前を作ることができるので，その方法を確認しておきましょう`function()` という関数を使います。
+
+```r
+f <- function(x){
+  # このなかで計算したいことを書く
+  # 最後に実行されるコマンドの結果が関数の値として出てくる
+}
+```
+
+「スクリプト」を作成することをおすすめします。
+
+---
+
+## 関数を作ってみよう (2/2)
+
+```{r}
+two_times <- function(x){
+  2 * x
+}
+two_times(1:4)
+```
+
+
+幾何平均と調和平均を計算する関数，`gmean` と `hmean` を作ってみましょう！
+
+```{r, eval=FALSE}
+gmean <- function(x) {
+  
+}
+
+hmean <- function(x) {
+  
+}
+```
+
+
+---
+
+## 問題
+
+調和平均を計算するのはどういうケースがあるか？例をあげよ。
+
+
+--
+
+- 速度の平均
+- ファンドのPER [こちら](https://corporatefinanceinstitute.com/resources/knowledge/other/harmonic-mean/)
+
+
+---
+
+## 発展問題
+
+加重平均を計算する関数 `weighted.mean()` があります。
+
+```{r}
+x <- c(100, 200, 300)
+weight <- c(0.3, 0.3, 0.4)
+weighted.mean(x, weight)
+```
+
+これを使って，を計算する関数 `weighted.hmean` を定義してください。ただし $w_i$ をデータ $x_i$ に対する重みとして
+
+$$\text{加重調和平均} = \frac{\sum_{i=1}^n w_i}{\sum_{i=1}^n (w_i / x_i)}$$
+
+[ファンドのPERの例](https://corporatefinanceinstitute.com/resources/knowledge/other/harmonic-mean/)に適用してみましょう。
+
+
+---
+
+## 箱ひげ図：分布の概要をみる
+
+```{r boxwhisker, out.height=330, dpi=120}
+x <- rt(500, df = 3)
+boxplot(x)
+```
+
+ひげの外側の点は「外れ値」を表す。
+
+---
+
+## データの「中心」
+
+中心を表す指標として「標本平均」
+
+$$\bar{X} = \frac{1}{n} \sum_{i=1}^n X_i$$
+
+を使うのがもっとも標準的。R では `mean(x)` 
+
+典型的なデータから離れているデータ (外れ値) が多いときには，刈り込み平均 `mean(x, trim = 0.1)` とか中央値 `meadian(x)` もよく使われる。外側の重みを徐々に小さくする加重平均も使える。
+
+ただし何をもって外れ値とみなすかは微妙な問題・・・・恣意的にならないように注意する。
+
+---
+
+## データの「中心」 (つづき)
+
+```{r}
+mean(x)
+mean(x, trim = 0.2)
+median(x)
+```
+
+例えば，「所得」は外れ値の影響が平均にあらわれやすいので，「平均的」な人の豊かさを中央値を使って調べたりする。
+
+---
+
+## データの「中心」 (つづき)
+
+```{r histchisq, out.height=350, dpi=120}
+y = rchisq(500, 10)  # 自由度6のカイ2乗分布
+hist(y, col = "gray")
+segments(mean(y), 0, mean(y), 300, lw = 3, col = "red")
+segments(median(y), 0, median(y), 300, lw = 3, col = "blue")
+```
+
+---
+
+## 尺度
+
+ヒストグラムがどれくらい横方向に広がっているか？  
+これは尺度と呼ばれる指標です。標準偏差とか分散が代表的な尺度指標です。
+
+```{r scale, out.height=280, dpi=120, fig.show='hold', out.extra='style="float:left"'}
+hist(rnorm(1000, sd = 2), col = "gray", xlim = c(-20, 20))
+hist(rnorm(1000, sd = 5), col = "gray")
+```
+
+---
+
+## 尺度の指標: 不偏分散
+
+$$\text{不偏分散}\quad s^2 = \frac{1}{n - 1} \sum_{i=1}^n \left( X_i - \bar{X} \right)^2$$
+
+がもっともよく使われる尺度の指標です。R では `var()` で計算できます。これを標本分散と呼ぶ場合もあります。
+
+$n$ で割った標本分散 
+
+$$\text{標本分散} = \frac{1}{n} \sum_{i=1}^n \left( X_i - \bar{X} \right)^2$$
+
+もまったく使われないわけではないので注意。
+
+
+---
+
+## 尺度の指標: 標準偏差
+
+分散は2乗しているのでもとのデータと単位があわない。平方根を取る方が使いやすいこともある。
+
+```{r}
+x <- rnorm(1000, sd = 10)   # sd は標準偏差！
+var(x)
+sd(x)
+sd(x) - sqrt(var(x))
+```
+
+---
+
+## 尺度の指標: 四分位偏差
+
+上位25%点から上位75%点の長さ（箱ひげ図の箱の大きさ）を四分位範囲と呼ぶ。
+
+データが正規分布から生成されている場合には，四分位範囲を 1.349 で割ったものは標準偏差の不偏推定量（「よい」推定量）になる。
+
+```{r}
+IQR(x) / 1.349
+```
+
+```{r}
+qnorm(0.75) - qnorm(0.25)
+```
+
+---
+
+## 尺度の指標: 中央絶対偏差
+
+平均は外れ値に弱い。中央値は外れ値に強い。  
+分散についても同様である。中央値のような尺度指標は？
+
+MAD（中央絶対偏差，Median Absolute Deviation）
+
+$$=
+\mathrm{Median}\left(\left\{
+  \left|
+    X_i - \mathrm{Median}(X)
+  \right|
+  \right\}_{i=1}^n
+\right)$$
+
+
+これを「標準化」した
+
+$$\mathrm{MADN} = \mathrm{MAD} / 0.675$$
+
+は，データが正規分布の場合には標準偏差の不偏推定量
+
+
+参考: 藤澤『ロバスト統計』
+
+
+---
+
+## MADN
+
+R では MADN は `mad()` 関数で計算できる。ややこしい！
+
+```{r}
+sd(x)
+mad(x)
+```
+
+---
+
+　　　「私と小鳥と鈴と」  
+　　　　　　　　　　　　　　金子みすゞ
+
+　　　私が両手をひろげても、  
+　　　お空はちっとも飛べないが  
+　　　飛べる小鳥は私のやうに、  
+　　　地面を速くは走れない。  
+　　　私がからだをゆすっても、  
+　　　きれいな音は出ないけど、  
+　　　あの鳴る鈴は私のやうに  
+　　　たくさんな唄は知らないよ。  
+　　　鈴と、小鳥と、それから私、  
+　　　みんなちがって、みんないい。
+
+---
+
+## チェビシェフの不等式
+
+データ $x_1,\dots, x_n$ が手元にある。標本平均は $\bar{x}$，標本標準偏差は $s$ である。このとき，任意の $k \ge 1$ について
+
+$$|x_i - \bar{x}| >  ks$$
+
+を満たすデータの数は， $(n-1)/k^2$ よりも少ない。
+
+すなわち，
+
+$\bar{x} \pm 2s$ の範囲に必ず 75% 以上のデータが入り，  
+$\bar{x} \pm 3s$ の範囲に必ず 88.8% 以上のデータが入ります。
+
+
+---
+
+## チェビシェフの不等式の確認
+
+```{r}
+chb <- rt(5000, df = 2)
+deviation <- abs(chb - mean(chb))
+
+# ±2s に入っていれば TRUE, さもなくば FALSE なベクトル
+head(deviation <= 2 * sd(chb))
+```
+
+
+```{r}
+# TRUE の割合を数える
+mean(deviation <= 2 * sd(chb))
+```
+
+チェビシェフの不等式はかなり保守的な評価でした。関心のある人は証明を確認してください。
+
+---
+
+## 確率変数とデータ
+
+統計学では背後に何らかの確率分布を想定して，すべてのデータが同じ分布に従っているとしてデータ分析を行うのが標準的である。だからこそ「平均の不偏推定量」とか「標準偏差の推定量」とかいう言葉遣いがでてくる。
+
+クラスに 10人の学生がいたら，当然のことながら個々の学生には個別の関心や目標があるので「平均点」を計算したところで，それは何も代表していないということもできる。「みんなちがって，みんないい」。
+
+だけどそれでは分析が手詰まりになってしまうので，単一の分布から得られた複数の数字であることを考えましょうというわけである。次週は，正規分布から導かれる分布について勉強します。
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day02")
+```
+チュートリアルがはじまるよ。
