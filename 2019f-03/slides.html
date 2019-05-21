@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club - Day 03</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Day 03
+## <a href="https://opueco.github.io/rclub-slides/2019f-03/slides.html" class="uri">https://opueco.github.io/rclub-slides/2019f-03/slides.html</a>
+### Kenji Sato
+### 2019/5/22
+
+---
+
+
+
+
+## 復習
+
+- データの分類
+- グラフ
+- 中心と尺度
+
+---
+
+## 言葉の整理
+
+確率変数
+- ランダムに値がでる何か。実験とかサイコロとか
+
+確率分布
+- 確率変数の値がどれくらい出やすいかを決める確率的な構造のこと。分布関数，密度関数などを使って表現する
+
+実現値（データ）
+- 確率変数の1つの値。(例) サイコロ投げたら 5 が出た。
+
+---
+
+## 確率分布とデータ
+
+確率分布というのは「ランダム」な現象の数学モデルである。
+
+- 値の出方はランダムだけど，各値（に近い値）が出る確率が決まっている。
+  ランダムな値を確率変数という。
+- 例えば，コイン・トスの場合は，裏表が出る確率が 1/2
+- もちろん，観測されるデータは裏か表のどちらか
+
+私たちはデータから，その背後にある確率分布について知りたい。つまり，「表が出た」という観測から「表が出る確率が 1/2 である」ことを言い当てたい。（もちろんそれは無理だ）
+
+
+---
+
+## たくさんのデータ
+
+さきほどの例で確率分布について何も言えない理由は，もちろんデータが1つしかないからだ。
+
+データが100個あるとどうだろう？
+
+確率 1/2 で表がでるであろう普通のコインを投げたら 50回くらい表がでる。もし，90回表が出たらコインは普通じゃないと考えてもよさそうである。
+
+本当か？
+
+
+---
+
+## 大数の法則:  1/
+
+コイン投げは「表を１」「裏を 0」
+
+と考えれば `\(\{0, 1\}\)` の値を取る確率変数で表現できそうである。確率分布は `\((1-p, p)\)` である。普通のコインは `\(p = 0.5\)` である。R では 
+
+
+```r
+&gt; sample(0:1, size = 1, prob = c(0.5, 0.5))
+```
+
+何回もコイン投げをするには `size` を変更， `replace = TRUE` をつける。
+
+
+```r
+&gt; sample(0:1, size = 5, replace = TRUE, prob = c(0.5, 0.5))
+```
+
+---
+
+## 大数の法則:  2/
+
+1枚のコイン投げの結果を `\(X_i\)` と書く。 `\(n\)` 回投げて `\(i\)` 番目の表裏を表す。
+表 = 1 が出た回数は
+
+$$
+\sum_{i=1}^n X_i
+$$
+
+表 = 1 が出た「経験確率」は 1 が出た割合で調べる。
+
+$$
+\frac{1}{n} \sum_{i=1}^n X_i
+$$
+
+0-1 の確率変数の「平均」は 1 が出た割合になる。
+
+---
+
+## 大数の法則:  3/
+
+平均は `mean()` で計算できる。コンソールで何度も実行してみよう。
+
+
+```r
+&gt; mean(sample(0:1, size = 5, replace = TRUE, prob = c(0.5, 0.5)))
+```
+
+**ヒント**
+
+コンソールでさっき実行したコマンドをもう一度実行するには，コンソールでキーボードの「↑」キーを押せば良い。
+
+---
+
+## 大数の法則:  4/
+
+`size` が 5 くらいだと，たまたま 4回表が出ることもあって，平均が 0.8 となることも結構起こる。
+
+`size` を 100, 1000 10000と増やしていくと，ほぼ 0.5 になる。
+
+
+```r
+mean(sample(0:1, size = 100000, 
+            replace = TRUE, prob = c(0.5, 0.5)))
+```
+
+```
+## [1] 0.50309
+```
+
+---
+
+## 大数の法則:  5/
+
+さっきの例は `\(p=0.5\)` としたから，0.5 に近い数字がでてきた。 `\(p=0.8\)` （表の出やすいコイン）を投げても 0.8 
+になるか？やってみよう。
+
+
+```r
+mean(sample(0:1, size = 100000, 
+            replace = TRUE, prob = c(0.2, 0.8)))
+```
+
+```
+## [1] 0.79943
+```
+
+---
+
+## 大数の法則:  6/
+
+表の出る確率 `\(p\)` は，実はコイン投げの「期待値」
+
+確率変数は
+
+`$$X_i = \begin{cases}
+1 \qquad \text{w/ prob.} \quad p\\
+0 \qquad \text{w/ prob.} \quad 1-p
+\end{cases}$$`
+
+期待値は
+
+`$$\mathbb{E}
+\left[
+ X_i
+\right]
+=
+ p \times 1 + (1-p) \times 0 = p$$`
+
+どうやら，たくさんあるデータの「平均」を取ると，データを生成している確率変数（分布）の「期待値」を取り出すことができるらしい。
+
+---
+
+## 独立性・大数の法則
+
+ただたくさんあるだけでは十分でないことに注意しよう。
+
+例えば，「裏をたくさん出してやろう」とか「裏が出たら次は表を出そう」などと考えて投げ方を変えたりすると（もし実際にそのようなイカサマができるなら），期待値を取り出すことはできない。
+
+「1つの確率変数の値が別の確率変数の分布を変えない」という性質を独立性という。
+独立で同一な分布からデータを抽出していれば，データの平均によって分布の期待値を取り出すことができる。これを **大数の法則** という。
+
+---
+
+## `\(p = 1/2\)` というには
+
+`\(n\)`回の独立なコイン投げをしたとき，標本平均がぴったり 1/2 になることはほとんどない。  
+（クイズ： 100回のコイン投げで標本平均がぴったり 1/2 になる確率は？）
+
+どうすれば「コインの裏表は当確率だ」といえるか？
+
+
+このためには「標本平均の確率分布」を知る必要がある。
+
+
+---
+
+## 独立確率変数の和
+
+同じ確率分布から「独立」に生成された数字を足し合わせると不思議なことが起こる。
+データの数が増えると「和の確率分布」が正規分布にどんどん近づいていくのだ。
+
+平均 `\(\mu\)`, 分散 `\(\sigma^2\)` であるような，同じ確率分布を持つ確率変数（ランダムな値の数学モデル） `\(X_1\)`, ..., `\(X_n\)` を足すと
+
+$$
+\sum_{i=i}^{n} X_i \sim^{\text{近似的に}} \mathcal{N}(n\mu, n\sigma^2)
+$$
+
+あるいは
+
+$$
+\frac{1}{n} \sum_{i=i}^{n} X_i \sim^{\text{近似的に}} \mathcal{N}(\mu, \sigma^2 / n)
+$$
+
+---
+
+## 試してみる
+
+コイントスの確率変数は，期待値が `\(p\)` で分散が `\(p(1-p)\)` である。
+だから， `\(\sum_{i=1}^{n} X_i\)` の分布は
+
+`$$\sum_{i=1}^{n} X_i \sim^{\text{近似的に}} \mathcal{N}(np, np(1-p))$$`
+
+となるはず。 `\(n=100\)`, `\(p = 1/2\)` なら
+
+`$$\sum_{i=1}^{100} X_i \sim^{\text{近似的に}} \mathcal{N}(50, 12.5)$$`
+---
+
+## 試してみる
+
+
+```r
+toss_coins &lt;- function(n){
+   sum(sample(0:1, n, replace = TRUE, prob = c(0.5, 0.5)))
+}
+```
+
+
+```r
+&gt; result &lt;- replicate(1000, toss_coins(n = 50))
+&gt; mean(result)
+```
+
+```
+## [1] 25.154
+```
+
+```r
+&gt; var(result)
+```
+
+```
+## [1] 13.27756
+```
+
+1. ヒストグラムを書いてみよう。
+2. 投げる回数 (n) を50 → 1000 など，回数を増やして実験してみよう。
+
+---
+
+## 試してみる（その2）
+
+足せば足すほど平均も増えるし，分散も増える。これでは使いづらい。
+だから `\(n\)` で割って「1回の試行」のスケールに戻してやればよい。
+
+$$
+\frac{1}{n} \sum_{i=i}^{n} X_i \sim^{\text{近似的に}} \mathcal{N}(\mu, \sigma^2 / n)
+$$
+
+分散がどんどん小さくなって，平均にごく近い値以外が起こる確率はほとんどゼロになる。
+
+
+**問題**: `toss_coins()` を少し修正して，平均値を出力するようにしよう。シミュレーションをしてヒストグラムを書いてみよう。
+
+---
+
+標本平均 `\(\bar X\)` の近似分布は `\(\mathcal{N}(\mu, \sigma^2 / n)\)`  
+`\(n\)` を増やすと分散がゼロに収束して，期待値 `\(\mu\)` の近くに分布が集中する。
+(100回投げて平均が 0.8 近くになる確率はほぼ０)
+
+
+```r
+&gt; curve(dnorm(x, 0.5,  0.05), from = -2, to = 2, col = "red")
+&gt; curve(dnorm(x, 0.5, 1), add = TRUE, col = "blue")
+```
+
+&lt;img src="slides_files/figure-html/normal-1.png" width="500" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 中心極限定理の使いみち
+
+- データの背後にある分布の平均 `\(\mu\)` と分散 `\(\sigma^2\)` について
+  適当な仮説を立てる（例えば「平均は 0.5だ」など）
+- その仮説のもとでは平均値の分布が「平均 0.5 の正規分布」になる
+  （注意: コイントスの場合は平均の仮説を立てると分散も決まる。一般の分布では
+  そうはいかないから， t分布を使う。あとで出てきます）
+- `\(n\)` が大きくなると分布が 0.5 の周りに集中してくるから，手元にあるデータが
+  「平凡な現象」か「稀な現象」かが（おおよそ）判別できる
+  
+---
+
+## 正規分布から導かれる分布
+
+要するに「手元のデータが起こる確率」あるいは「手元のデータよりもっと稀なデータが起こる確率」がわかればよい。
+
+正規分布から導かれる以下の分布はよく使われる。
+
+- `\(t\)`-分布
+- `\(\chi^2\)` 分布
+- `\(F\)`-分布
+
+---
+
+## 正規分布
+
+
+&lt;img src="slides_files/figure-html/rnorm-1.png" width="700" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 問題
+
+- `\(X\)` は平均ゼロ，分散1 の正規分布にしたがう。 `\(X\)` が -0.5 から 0.5 の間に入る確率は？
+- `\(X\)` は平均5, 分散4 の正規分布に従う。 `\(X\)` が -3 から 3 の間に入る確率は？
+
+
+ヒント: `pnorm()` の使い方を調べる。
+
+
+```r
+&gt; ?pnorm
+```
+
+---
+
+# カイ二乗分布
+
+標準正規分布 `\(X_i \sim \mathcal{N}(0, 1)\)` の2乗和 `\(X_1^2 + \cdots + X_n^2\)` は「自由度 `\(n\)` のカイ2乗分布」に従う
+
+&lt;img src="slides_files/figure-html/chi2-graphs-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 問題
+
+- `rchisq(n, df)` を使って乱数を生成し，カイ２乗分布のヒストグラムをつくってみよう
+- 自由度をどんどん大きくすると正規分布に近づいてくるのはなぜか？
+
+
+---
+
+# カイ二乗分布
+
+&lt;img src="slides_files/figure-html/rchisq-1.png" width="700" style="display: block; margin: auto;" /&gt;
+
+---
+
+# t 分布
+
+- `\(X \sim \mathcal{N} (0,1)\)`, 標準正規分布
+- `\(Y\)` は自由度 `\(n\)` のカイ2乗分布
+- `\(X\)` と `\(Y\)` は独立
+
+このとき
+
+`$$t = \frac{X}{\sqrt{Y / n}}$$`
+
+は自由度 `\(n\)` の t 分布。
+
+---
+
+## t 分布
+&lt;img src="slides_files/figure-html/t-graphs-1.png" width="600" height="450" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# なんの役に立つのか？
+
+![guiness](images/beer.jpg)
+
+
+---
+
+# 標準化 (1/)
+
+データ `\(X_1, \dots, X_n\)` を生成している確率分布の期待値が `\(\mu\)` であるという仮説を立てる。標本平均の分布は `\(\mathcal{N}(\mu, \sigma^2 / n)\)` なので，
+「標準化」という手続きをして平均をゼロ，分散を 1 にする。
+
+`$$Z = \frac{\bar{X} - \mu}{\sqrt{\sigma^2 / n}}$$`
+
+あれ， `\(\sigma^2\)` ってなんだろう？
+
+---
+
+# 標準化 (2/)
+
+ギネスビールに勤めるゴセットさん，とりあえず標本分散でやってみるか・・・・と考える。
+
+`$$t = \frac{\bar{X} - \mu}{\sqrt{S^2 / n}}$$`
+
+すると，どうやら正規分布よりも外れ値が多いことに気がついたらしい。
+
+これが今でいう 自由度 `\(n-1\)` の t分布。正規分布に似ているけど，少し裾が重い
+
+---
+
+## 問題
+
+t分布に関する Rの関数 `dt`, `rt`, `pt`, `qt` の使い方を調べて使ってみましょう。
+例:   
+
+```r
+&gt; hist(rt(10000, df = 4), breaks = 40, col = "gray")
+```
+
+&lt;img src="slides_files/figure-html/thist-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+---
+
+## F分布
+
+- `\(u_1\)` が自由度 `\(n_1\)` の `\(\chi^2\)` 分布
+- `\(u_2\)` が自由度 `\(n_2\)` の `\(\chi^2\)` 分布
+- `\(u_1\)`, `\(u_2\)` が独立
+
+このとき
+
+`$$F = \frac{u_1 / n_1}{u_2 / n_2}$$`
+
+は自由度 `\((n_1, n_2)\)` のF分布
+
+---
+
+## なんの役に立つのか？
+
+`\(\chi^2\)` 分布は，標本分散のモデル。
+2つのデータの分散が同じかどうかを調べるには F分布を使う。分散分析
+
+線形制約の検定。 線形モデル `\(Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + u\)` において `\(\beta_1 = \beta_2\)` か `\(\beta_1 \neq \beta_2\)` を知りたい，など。（制約があるときの2乗誤差と制約がないときの2乗誤差の比を調べる）
+
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day03")
+```
+チュートリアルがはじまるよ。
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

@@ -1,0 +1,545 @@
+---
+title: R Club - Day 03
+subtitle: "https://opueco.github.io/rclub-slides/2019f-03/slides.html"
+author: Kenji Sato
+date: 2019/5/22
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: ["../asset/remark-css/style.css"]
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+header-includes: ['<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">', '<link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">']
+---
+
+```{r setup, include=FALSE}
+set.seed(100)
+knitr::opts_chunk$set(fig.align = "center", prompt = TRUE)
+options(width = 63)
+```
+
+## 復習
+
+- データの分類
+- グラフ
+- 中心と尺度
+
+---
+
+## 言葉の整理
+
+確率変数
+- ランダムに値がでる何か。実験とかサイコロとか
+
+確率分布
+- 確率変数の値がどれくらい出やすいかを決める確率的な構造のこと。分布関数，密度関数などを使って表現する
+
+実現値（データ）
+- 確率変数の1つの値。(例) サイコロ投げたら 5 が出た。
+
+---
+
+## 確率分布とデータ
+
+確率分布というのは「ランダム」な現象の数学モデルである。
+
+- 値の出方はランダムだけど，各値（に近い値）が出る確率が決まっている。
+  ランダムな値を確率変数という。
+- 例えば，コイン・トスの場合は，裏表が出る確率が 1/2
+- もちろん，観測されるデータは裏か表のどちらか
+
+私たちはデータから，その背後にある確率分布について知りたい。つまり，「表が出た」という観測から「表が出る確率が 1/2 である」ことを言い当てたい。（もちろんそれは無理だ）
+
+
+---
+
+## たくさんのデータ
+
+さきほどの例で確率分布について何も言えない理由は，もちろんデータが1つしかないからだ。
+
+データが100個あるとどうだろう？
+
+確率 1/2 で表がでるであろう普通のコインを投げたら 50回くらい表がでる。もし，90回表が出たらコインは普通じゃないと考えてもよさそうである。
+
+本当か？
+
+
+---
+
+## 大数の法則:  1/
+
+コイン投げは「表を１」「裏を 0」
+
+と考えれば $\{0, 1\}$ の値を取る確率変数で表現できそうである。確率分布は $(1-p, p)$ である。普通のコインは $p = 0.5$ である。R では 
+
+```{r, eval = FALSE}
+sample(0:1, size = 1, prob = c(0.5, 0.5))
+```
+
+何回もコイン投げをするには `size` を変更， `replace = TRUE` をつける。
+
+```{r, eval = FALSE}
+sample(0:1, size = 5, replace = TRUE, prob = c(0.5, 0.5))
+```
+
+---
+
+## 大数の法則:  2/
+
+1枚のコイン投げの結果を $X_i$ と書く。 $n$ 回投げて $i$ 番目の表裏を表す。
+表 = 1 が出た回数は
+
+$$
+\sum_{i=1}^n X_i
+$$
+
+表 = 1 が出た「経験確率」は 1 が出た割合で調べる。
+
+$$
+\frac{1}{n} \sum_{i=1}^n X_i
+$$
+
+0-1 の確率変数の「平均」は 1 が出た割合になる。
+
+---
+
+## 大数の法則:  3/
+
+平均は `mean()` で計算できる。コンソールで何度も実行してみよう。
+
+```{r, eval = FALSE}
+mean(sample(0:1, size = 5, replace = TRUE, prob = c(0.5, 0.5)))
+```
+
+**ヒント**
+
+コンソールでさっき実行したコマンドをもう一度実行するには，コンソールでキーボードの「↑」キーを押せば良い。
+
+---
+
+## 大数の法則:  4/
+
+`size` が 5 くらいだと，たまたま 4回表が出ることもあって，平均が 0.8 となることも結構起こる。
+
+`size` を 100, 1000 10000と増やしていくと，ほぼ 0.5 になる。
+
+```{r, prompt=FALSE}
+mean(sample(0:1, size = 100000, 
+            replace = TRUE, prob = c(0.5, 0.5)))
+```
+
+---
+
+## 大数の法則:  5/
+
+さっきの例は $p=0.5$ としたから，0.5 に近い数字がでてきた。 $p=0.8$ （表の出やすいコイン）を投げても 0.8 
+になるか？やってみよう。
+
+```{r, prompt=FALSE}
+mean(sample(0:1, size = 100000, 
+            replace = TRUE, prob = c(0.2, 0.8)))
+```
+
+---
+
+## 大数の法則:  6/
+
+表の出る確率 $p$ は，実はコイン投げの「期待値」
+
+確率変数は
+
+$$X_i = \begin{cases}
+1 \qquad \text{w/ prob.} \quad p\\
+0 \qquad \text{w/ prob.} \quad 1-p
+\end{cases}$$
+
+期待値は
+
+$$\mathbb{E}
+\left[
+ X_i
+\right]
+=
+ p \times 1 + (1-p) \times 0 = p$$
+
+どうやら，たくさんあるデータの「平均」を取ると，データを生成している確率変数（分布）の「期待値」を取り出すことができるらしい。
+
+---
+
+## 独立性・大数の法則
+
+ただたくさんあるだけでは十分でないことに注意しよう。
+
+例えば，「裏をたくさん出してやろう」とか「裏が出たら次は表を出そう」などと考えて投げ方を変えたりすると（もし実際にそのようなイカサマができるなら），期待値を取り出すことはできない。
+
+「1つの確率変数の値が別の確率変数の分布を変えない」という性質を独立性という。
+独立で同一な分布からデータを抽出していれば，データの平均によって分布の期待値を取り出すことができる。これを **大数の法則** という。
+
+---
+
+## $p = 1/2$ というには
+
+$n$回の独立なコイン投げをしたとき，標本平均がぴったり 1/2 になることはほとんどない。  
+（クイズ： 100回のコイン投げで標本平均がぴったり 1/2 になる確率は？）
+
+どうすれば「コインの裏表は当確率だ」といえるか？
+
+
+このためには「標本平均の確率分布」を知る必要がある。
+
+
+---
+
+## 独立確率変数の和
+
+同じ確率分布から「独立」に生成された数字を足し合わせると不思議なことが起こる。
+データの数が増えると「和の確率分布」が正規分布にどんどん近づいていくのだ。
+
+平均 $\mu$, 分散 $\sigma^2$ であるような，同じ確率分布を持つ確率変数（ランダムな値の数学モデル） $X_1$, ..., $X_n$ を足すと
+
+$$
+\sum_{i=i}^{n} X_i \sim^{\text{近似的に}} \mathcal{N}(n\mu, n\sigma^2)
+$$
+
+あるいは
+
+$$
+\frac{1}{n} \sum_{i=i}^{n} X_i \sim^{\text{近似的に}} \mathcal{N}(\mu, \sigma^2 / n)
+$$
+
+---
+
+## 試してみる
+
+コイントスの確率変数は，期待値が $p$ で分散が $p(1-p)$ である。
+だから， $\sum_{i=1}^{n} X_i$ の分布は
+
+$$\sum_{i=1}^{n} X_i \sim^{\text{近似的に}} \mathcal{N}(np, np(1-p))$$
+
+となるはず。 $n=100$, $p = 1/2$ なら
+
+$$\sum_{i=1}^{100} X_i \sim^{\text{近似的に}} \mathcal{N}(50, 12.5)$$
+---
+
+## 試してみる
+
+```{r, prompt=FALSE}
+toss_coins <- function(n){
+   sum(sample(0:1, n, replace = TRUE, prob = c(0.5, 0.5)))
+}
+```
+
+```{r}
+result <- replicate(1000, toss_coins(n = 50))
+mean(result)
+var(result)
+```
+
+1. ヒストグラムを書いてみよう。
+2. 投げる回数 (n) を50 → 1000 など，回数を増やして実験してみよう。
+
+---
+
+## 試してみる（その2）
+
+足せば足すほど平均も増えるし，分散も増える。これでは使いづらい。
+だから $n$ で割って「1回の試行」のスケールに戻してやればよい。
+
+$$
+\frac{1}{n} \sum_{i=i}^{n} X_i \sim^{\text{近似的に}} \mathcal{N}(\mu, \sigma^2 / n)
+$$
+
+分散がどんどん小さくなって，平均にごく近い値以外が起こる確率はほとんどゼロになる。
+
+
+**問題**: `toss_coins()` を少し修正して，平均値を出力するようにしよう。シミュレーションをしてヒストグラムを書いてみよう。
+
+---
+
+標本平均 $\bar X$ の近似分布は $\mathcal{N}(\mu, \sigma^2 / n)$  
+$n$ を増やすと分散がゼロに収束して，期待値 $\mu$ の近くに分布が集中する。
+(100回投げて平均が 0.8 近くになる確率はほぼ０)
+
+```{r normal, dpi=196, out.width=500, fig.asp=0.7}
+curve(dnorm(x, 0.5,  0.05), from = -2, to = 2, col = "red")
+curve(dnorm(x, 0.5, 1), add = TRUE, col = "blue")
+```
+
+---
+
+## 中心極限定理の使いみち
+
+- データの背後にある分布の平均 $\mu$ と分散 $\sigma^2$ について
+  適当な仮説を立てる（例えば「平均は 0.5だ」など）
+- その仮説のもとでは平均値の分布が「平均 0.5 の正規分布」になる
+  （注意: コイントスの場合は平均の仮説を立てると分散も決まる。一般の分布では
+  そうはいかないから， t分布を使う。あとで出てきます）
+- $n$ が大きくなると分布が 0.5 の周りに集中してくるから，手元にあるデータが
+  「平凡な現象」か「稀な現象」かが（おおよそ）判別できる
+  
+---
+
+## 正規分布から導かれる分布
+
+要するに「手元のデータが起こる確率」あるいは「手元のデータよりもっと稀なデータが起こる確率」がわかればよい。
+
+正規分布から導かれる以下の分布はよく使われる。
+
+- $t$-分布
+- $\chi^2$ 分布
+- $F$-分布
+
+---
+
+## 正規分布
+
+
+```{r rnorm, out.width=700, fig.asp=0.6, dpi=160, echo=FALSE}
+opar <- par(mgp = c(1, 0.1, 0), mar = c(1, 1, 1, 1), mfrow = c(2, 2))
+
+set.seed(100)
+xaxpos <- - 0.001
+xaxmin <- -4.5
+xaxmax <- 4.5
+
+X = 1.2
+x <- seq(-4, 4, by = 0.05)
+
+# dnorm
+
+plot(NULL, axes = FALSE, xlab = "", ylab = "", xlim = range(x), ylim = c(-0.02, dnorm(0)), lwd = 2)
+curve(dnorm, from = min(x), to = max(x), lwd = 2, add = TRUE)
+arrows(xaxmin, xaxpos, xaxmax, xaxpos, xpd = TRUE, lwd = 2, length = 0.1)
+segments(X, 0, X, dnorm(X))
+segments(X - 0.1, dnorm(X), X + 0.3, dnorm(X))
+text(X, -0.02, "x", cex = 1.4)
+text(X + 0.3, dnorm(X), "dnorm(x)", pos = 4, cex = 1.4)
+
+
+# rnorm
+
+plot(NULL, axes = FALSE, xlab = "", ylab = "", xlim = range(x), ylim = c(-0.02, dnorm(0)), lwd = 2)
+curve(dnorm, from = min(x), to = max(x), lwd = 2, add = TRUE)
+arrows(xaxmin, xaxpos, xaxmax, xaxpos, xpd = TRUE, lwd = 2, length = 0.1)
+rs = rnorm(50)
+for (r in rs) {
+  segments(r, xaxpos - 0.01, r, xaxpos + 0.01)
+}
+text(0, 0.1, "rnorm(n)", pos = 1, cex = 1.4)
+
+
+plot(NULL, axes = FALSE, xlab = "", ylab = "", xlim = c(-4, 4), ylim = c(-0.02, dnorm(0)), lwd = 2)
+polygon(c(x[x < X], X), c(dnorm(x[x < X]), 0), col = rgb(1, 0, 0, 0.2), lty = 0)
+curve(dnorm, from = - 4, to = 4, lwd = 2, add = TRUE)
+arrows(xaxmin, xaxpos, xaxmax, xaxpos, xpd = TRUE, lwd = 2, length = 0.1)
+text(X, -0.02, "q", cex = 1.4)
+text(0, 0.8 * dnorm(X), "pnorm(q)", pos = 3, cex = 1.4)
+
+
+plot(NULL, axes = FALSE, xlab = "", ylab = "", xlim = c(-4, 4), ylim = c(-0.02, dnorm(0)), lwd = 2)
+polygon(c(x[x < X], X), c(dnorm(x[x < X]), 0), col = rgb(1, 0, 0, 0.2), lty = 0)
+curve(dnorm, from = - 4, to = 4, lwd = 2, add = TRUE)
+arrows(xaxmin, xaxpos, xaxmax, xaxpos, xpd = TRUE, lwd = 2, length = 0.1)
+text(X, -0.02, "qnorm(p)", cex = 1.4)
+text(0, 0.8 * dnorm(X), "p", pos = 3, cex = 1.4)
+
+par(opar)
+```
+
+---
+
+## 問題
+
+- $X$ は平均ゼロ，分散1 の正規分布にしたがう。 $X$ が -0.5 から 0.5 の間に入る確率は？
+- $X$ は平均5, 分散4 の正規分布に従う。 $X$ が -3 から 3 の間に入る確率は？
+
+
+ヒント: `pnorm()` の使い方を調べる。
+
+```{r, eval=FALSE}
+?pnorm
+```
+
+---
+
+# カイ二乗分布
+
+標準正規分布 $X_i \sim \mathcal{N}(0, 1)$ の2乗和 $X_1^2 + \cdots + X_n^2$ は「自由度 $n$ のカイ2乗分布」に従う
+
+```{r chi2-graphs, echo = FALSE, out.height=400}
+curve(dchisq(x, 1), from = 0, to = 10, ylim = c(0, 0.6))
+for (i in 2:10) {
+   curve(dchisq(x, i), add = TRUE)
+}
+
+```
+
+---
+
+## 問題
+
+- `rchisq(n, df)` を使って乱数を生成し，カイ２乗分布のヒストグラムをつくってみよう
+- 自由度をどんどん大きくすると正規分布に近づいてくるのはなぜか？
+
+
+---
+
+# カイ二乗分布
+
+```{r rchisq, out.width=700, fig.asp=0.6, dpi=160, echo=FALSE}
+opar <- par(mgp = c(1, 0.1, 0), mar = c(1, 1, 1, 1), mfrow = c(2, 2))
+
+set.seed(100)
+xaxpos <- - 0.001
+xaxmin <- -0.5
+xaxmax <- 16.9
+
+X = 5
+x <- seq(0, 16, by = 0.05)
+
+# dchisq
+
+plot(NULL, axes = FALSE, xlab = "", ylab = "", xlim = range(x), ylim = c(-0.02, 0.15), lwd = 2)
+curve(dchisq(x, 5), from = min(x), to = max(x), lwd = 2, add = TRUE)
+arrows(xaxmin, xaxpos, xaxmax, xaxpos, xpd = TRUE, lwd = 2, length = 0.1)
+segments(X, 0, X, dchisq(X, 5))
+segments(X - 0.15, dchisq(X, 5), X + 0.3, dchisq(X, 5))
+text(X, -0.01, "x", cex = 1.4)
+text(X + 0.3, dchisq(X, 5), "dchisq(x, 5)", pos = 4, cex = 1.4)
+
+
+# rchisq
+
+plot(NULL, axes = FALSE, xlab = "", ylab = "", xlim = range(x), ylim = c(-0.02, 0.15), lwd = 2)
+curve(dchisq(x, 5), from = min(x), to = max(x), lwd = 2, add = TRUE)
+arrows(xaxmin, xaxpos, xaxmax, xaxpos, xpd = TRUE, lwd = 2, length = 0.1)
+rs = rchisq(50, 5)
+for (r in rs) {
+  segments(r, xaxpos - 0.01, r, xaxpos + 0.01)
+}
+text(5, 0.05, "rchisq(n, 5)", pos = 1, cex = 1.4)
+
+
+# pchisq
+
+plot(NULL, axes = FALSE, xlab = "", ylab = "", xlim = range(x), ylim = c(-0.02, 0.15), lwd = 2)
+polygon(c(x[x < X], X), c(dchisq(x[x < X], 5), 0), col = rgb(1, 0, 0, 0.2), lty = 0)
+curve(dchisq(x, 5), from = min(x), to = max(x), lwd = 2, add = TRUE)
+arrows(xaxmin, xaxpos, xaxmax, xaxpos, xpd = TRUE, lwd = 2, length = 0.1)
+text(X, -0.015, "q", cex = 1.4)
+text(5, 0.05, "pchisq(q, 5)", pos = 1, cex = 1.4)
+
+
+plot(NULL, axes = FALSE, xlab = "", ylab = "", xlim = range(x), ylim = c(-0.02, 0.15), lwd = 2)
+polygon(c(x[x < X], X), c(dchisq(x[x < X], 5), 0), col = rgb(1, 0, 0, 0.2), lty = 0)
+curve(dchisq(x, 5), from = min(x), to = max(x), lwd = 2, add = TRUE)
+arrows(xaxmin, xaxpos, xaxmax, xaxpos, xpd = TRUE, lwd = 2, length = 0.1)
+text(X, -0.015, "qchisq(p, 5)", cex = 1.4)
+text(3, 0.05, "p", pos = 1, cex = 1.4)
+
+par(opar)
+```
+
+---
+
+# t 分布
+
+- $X \sim \mathcal{N} (0,1)$, 標準正規分布
+- $Y$ は自由度 $n$ のカイ2乗分布
+- $X$ と $Y$ は独立
+
+このとき
+
+$$t = \frac{X}{\sqrt{Y / n}}$$
+
+は自由度 $n$ の t 分布。
+
+---
+
+## t 分布
+```{r t-graphs, echo = FALSE, out.height=450, out.width=600, dpi = 160}
+curve(dt(x, 1), from = -6, to = 6, ylim = c(0,dnorm(0)), lwd = 2)
+for (i in seq(2, 20, by = 4)) curve(dt(x, i), add = TRUE)
+curve(dnorm(x), add = TRUE, col = "red", lwd = 2)
+
+segments(-1, dnorm(-1), -1.5, dnorm(-1) + 0.1, col = "red")
+text(-1.5, dnorm(-1) + 0.1, "N(0,1)", pos = 3, col = "red")
+```
+
+
+---
+
+# なんの役に立つのか？
+
+![guiness](images/beer.jpg)
+
+
+---
+
+# 標準化 (1/)
+
+データ $X_1, \dots, X_n$ を生成している確率分布の期待値が $\mu$ であるという仮説を立てる。標本平均の分布は $\mathcal{N}(\mu, \sigma^2 / n)$ なので，
+「標準化」という手続きをして平均をゼロ，分散を 1 にする。
+
+$$Z = \frac{\bar{X} - \mu}{\sqrt{\sigma^2 / n}}$$
+
+あれ， $\sigma^2$ ってなんだろう？
+
+---
+
+# 標準化 (2/)
+
+ギネスビールに勤めるゴセットさん，とりあえず標本分散でやってみるか・・・・と考える。
+
+$$t = \frac{\bar{X} - \mu}{\sqrt{S^2 / n}}$$
+
+すると，どうやら正規分布よりも外れ値が多いことに気がついたらしい。
+
+これが今でいう 自由度 $n-1$ の t分布。正規分布に似ているけど，少し裾が重い
+
+---
+
+## 問題
+
+t分布に関する Rの関数 `dt`, `rt`, `pt`, `qt` の使い方を調べて使ってみましょう。
+例:   
+```{r thist, out.height=350}
+hist(rt(10000, df = 4), breaks = 40, col = "gray")
+```
+
+---
+
+## F分布
+
+- $u_1$ が自由度 $n_1$ の $\chi^2$ 分布
+- $u_2$ が自由度 $n_2$ の $\chi^2$ 分布
+- $u_1$, $u_2$ が独立
+
+このとき
+
+$$F = \frac{u_1 / n_1}{u_2 / n_2}$$
+
+は自由度 $(n_1, n_2)$ のF分布
+
+---
+
+## なんの役に立つのか？
+
+$\chi^2$ 分布は，標本分散のモデル。
+2つのデータの分散が同じかどうかを調べるには F分布を使う。分散分析
+
+線形制約の検定。 線形モデル $Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + u$ において $\beta_1 = \beta_2$ か $\beta_1 \neq \beta_2$ を知りたい，など。（制約があるときの2乗誤差と制約がないときの2乗誤差の比を調べる）
+
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day03")
+```
+チュートリアルがはじまるよ。
