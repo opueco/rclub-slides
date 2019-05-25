@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club - Day 04</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Day 04
+## <a href="https://opueco.github.io/rclub-slides/2019f-04/slides.html" class="uri">https://opueco.github.io/rclub-slides/2019f-04/slides.html</a>
+### Kenji Sato
+### 2019/5/29
+
+---
+
+
+
+
+## 復習
+
+- 大数の法則
+- 中心極限定理
+- 正規分布と正規分布から導かれる分布
+
+---
+
+## 復習: F-分布
+
+
+```r
+f &lt;- replicate(10000, 
+      (sum(rnorm(10) ^ 2) / 10) / (sum(rnorm(15) ^ 2) / 15)
+     )
+hist(f, breaks = 40, freq = FALSE)
+curve(df(x, 10, 15), add = TRUE, lwd = 2)
+```
+
+&lt;img src="slides_files/figure-html/f-review-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## 階乗
+
+`\(n! = n\times (n-1)\times \cdots 2 \times 1\)`
+
+ただし， `\(0! = 1\)` と約束する。
+
+
+
+```r
+&gt; factorial(0)
+```
+
+```
+## [1] 1
+```
+
+```r
+&gt; factorial(4)
+```
+
+```
+## [1] 24
+```
+
+---
+
+## 2項係数
+
+`$$_nC_r = \begin{pmatrix}n \\ r\end{pmatrix}
+= \frac{n!}{k!(n-k)!}=
+\prod_{i=1}^{k} \frac{n + 1 - i}{i}$$`
+
+は `\(n\)`個の中から `\(r\)`個選ぶ組み合わせの数。
+
+
+```r
+&gt; choose(5, 3)
+```
+
+```
+## [1] 10
+```
+
+
+`choose()` を忘れても大丈夫
+
+
+
+```r
+&gt; n &lt;- 5; k &lt;- 3
+&gt; prod((n + 1 - 1):(n + 1 - k) / 1:k)
+```
+
+```
+## [1] 10
+```
+
+---
+
+## 2項分布の確率
+
+試行を繰り返して成功-失敗を判定する。成功の数の確率変数が 2項分布
+
+```r
+dbinom(x, size, prob)
+```
+
+`dbinom(3, 10, 0.5)` は10回硬貨投げで表が出る確率。  
+`dbinom(3, 10, 1/6)` は10回サイコロ投げて1が3回出る確率
+
+10回の硬貨投げで，「表が 6回以上」出る確率は？
+
+--
+
+
+```r
+&gt; sum(dbinom(6:10, 10, 0.5))
+```
+
+```
+## [1] 0.3769531
+```
+
+
+---
+
+## 数式を用いた確率の表現
+
+歪んだ硬貨，表が出る確率が `\(\theta\)`, 裏が出る確率が `\(1-\theta\)`
+
+`\(n\)` 回投げて表の出る回数がちょうど `\(r\)`回である確率は
+
+`$$_nC_r \theta^r(1-\theta)^{n-r}$$`
+
+特定の裏表の並びが出る確率が `\(\theta^r (1-\theta)^{n-r}\)`，
+`\(r\)`回表が出る場合の数 `\(_nC_r\)` を掛ける
+
+---
+
+**[ホーエル 第3章問題18]**  
+ある電子機器は5個の部品から組み立てられていて，この機器は5この部品が全部順調に働くときにのみ稼働するものとする。各部品が順調にはたらく確率をいずれも0.9とするとき，この機器が稼働する確率はいくらか。
+
+5個の部品のうち，4つだけが順調にはたらけばこの機器は稼働するとするならば，この確率はいくらか。
+
+--
+
+**こたえ**
+
+
+```r
+&gt; dbinom(5, 5, prob = 0.9)
+```
+
+```
+## [1] 0.59049
+```
+
+```r
+&gt; sum(dbinom(4:5, 5, prob = 0.9))
+```
+
+```
+## [1] 0.91854
+```
+
+---
+
+## 確率関数のグラフ
+
+
+```r
+barplot(dbinom(0:10, 10, 0.5), names.arg = 0:10,
+        ylim = c(0, 0.25))
+```
+
+&lt;img src="slides_files/figure-html/binom-graph1-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 累積分布関数
+
+
+```r
+barplot(pbinom(0:10, 10, 0.5), names.arg = 0:10)
+```
+
+&lt;img src="slides_files/figure-html/binom-graph2-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## `dbinom` と `pbinom` の関係
+
+&lt;img src="slides_files/figure-html/binom-graph3-1.png" width="600" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 統計的仮説検定の考え方
+
+「ある硬貨を10回投げたところ，表が2回しか出なかった。このことから，この硬貨は表が出にくいと言ってよいであろうか」（p. 35）
+
+まずは「この硬貨は表が出やすかったり裏が出やすかったりしない」と仮定する。この仮定を **帰無仮説 (null hypothesis)** と呼ぶ。
+
+「表が2回出る」という実際に起った事象と同等またはより珍しい事象が起こる確率を計算する。ここでは，「同等またはより珍しい事象＝表が0,1,2回または裏が0,1,2回出る事象」と考える。
+
+---
+
+## 帰無仮説のもとでの確率分布
+
+ピンク色の部分が，「表が2回出る」という実際に起った事象よりも珍しい事象が起こる確率
+
+&lt;img src="slides_files/figure-html/binom-graph4-1.png" width="600" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 計算
+
+観測された事象より稀な現象
+
+
+```r
+&gt; events &lt;- 0:10
+&gt; rare &lt;- events[events &lt;= 2 | events &gt;= 10 - 2]
+&gt; rare
+```
+
+```
+## [1]  0  1  2  8  9 10
+```
+
+より珍しい現象が起こる確率。これを **p値 (p-value)** という
+
+
+```r
+&gt; sum(dbinom(rare, 10, 0.5))
+```
+
+```
+## [1] 0.109375
+```
+
+---
+
+## 有意水準
+
+「この硬貨は表が出やすいか」という問いが「`\(p = 0.11\)` は小さいか」という問いに置き換えることができる。
+
+`\(p &lt; \alpha\)` のときに「小さい」と判断する場合のしきい値 `\(\alpha\)` を **有意水準 (significance level, level of significance)** という。
+
+例えば `\(p &lt; 0.05\)` のとき 
+
+有意水準 5% で帰無仮説が棄却される，あるいは  
+有意水準 5% で統計的に有意であるという。
+
+`\(p &gt; \alpha\)` のときは何も分からない。先程の例では 10%水準でも有意でない。
+
+
+---
+
+## `binom.test`
+
+2項分布にもとづく検定の原理がわかったら，便利な関数を使ってもOK。さっき計算した p-value と同じ値が確認できる
+
+
+```r
+&gt; binom.test(2, 10)
+```
+
+```
+## 
+## 	Exact binomial test
+## 
+## data:  2 and 10
+## number of successes = 2, number of trials = 10, p-value
+## = 0.1094
+## alternative hypothesis: true probability of success is not equal to 0.5
+## 95 percent confidence interval:
+##  0.02521073 0.55609546
+## sample estimates:
+## probability of success 
+##                    0.2
+```
+
+---
+
+## p値だけが欲しいとき
+
+データフレームの列を取り出すのと同じ記法を使う
+
+
+```r
+&gt; binom.test(2, 10)$p.value
+```
+
+```
+## [1] 0.109375
+```
+
+
+---
+
+## よりみち: 制御構文 (1/)
+
+表が出る回数を次々に変えて，p値をベクトルに並べたい場合はどうしようか。つまり，こういうことをやりたい
+
+
+
+```r
+pval &lt;- numeric(11)
+pval[1] &lt;- binom.test(0, 10)$p.value
+pval[2] &lt;- binom.test(1, 10)$p.value
+pval[3] &lt;- binom.test(2, 10)$p.value
+pval[4] &lt;- binom.test(3, 10)$p.value
+pval[5] &lt;- binom.test(4, 10)$p.value
+pval[6] &lt;- binom.test(5, 10)$p.value
+pval[7] &lt;- binom.test(6, 10)$p.value
+pval[8] &lt;- binom.test(7, 10)$p.value
+pval[9] &lt;- binom.test(8, 10)$p.value
+pval[10] &lt;- binom.test(9, 10)$p.value
+pval[11] &lt;- binom.test(10, 10)$p.value
+pval
+```
+
+```
+##  [1] 0.001953125 0.021484375 0.109375000 0.343750000
+##  [5] 0.753906250 1.000000000 0.753906250 0.343750000
+##  [9] 0.109375000 0.021484375 0.001953125
+```
+
+---
+
+## よりみち: 制御構文 (2/)
+
+11個くらいなら上のように書けなくもないが，いかにもめんどくさそうである。
+1000個になったらもうお手上げだ。
+
+同じパターンの計算を繰り返す書き方を覚えればよい。先程のケースでは
+
+```r
+pval[i+1] &lt;- binom.test(i, 10)$p.value
+```
+
+という同じパターンが何度も現れている。このパターンの中で `i=0`, `i=1`, `i=2`, ... と `i` が変化する。
+
+こういうケースには `for` ループを使うのが一番カンタンだ。
+
+---
+
+## よりみち: 制御構文 (3/)
+
+**注意!!**
+
+そのうち「R では `for`ループを使ったコードを書かないほうがよいよ」などというマウントをしてくる人が現れるだろう。
+
+しかし，そういう発言はあなたが上級者になるまで完全に無視すればいい。`for` はほぼすべてのプログラミング言語で使える一方で，`*apply` 系の関数はかなりRに特殊的な技能である。まずは `for` ループを覚えよう。
+
+そうすれば，とりあえず動くコードを書けるし，Rを使わない同僚あるいはRの書き方を忘れた未来の自分にも読みやすいコードを書ける。これは本当に重要なことだ。
+
+---
+
+## よりみち: 制御構文 (4/)
+
+`for`ループの簡単な例
+
+
+```r
+for (i in 1:3){
+  print(i * i)
+}
+```
+
+```
+## [1] 1
+## [1] 4
+## [1] 9
+```
+
+これは次のコードと同等
+
+```r
+print(1 * 1)
+print(2 * 2)
+print(3 * 3)
+```
+
+---
+
+## よりみち: 制御構文 (5/)
+
+`1:3` の部分はループの範囲を表すベクトル。ベクトルの要素(1, 2, 3)を順番に `i` に代入して `{ }` の中のコードを実行する。
+
+これを使えば先程のp値の計算は次のようにできる。
+
+
+```r
+pval &lt;- numeric(11)
+for (i in 0:10){
+  pval[i+1] &lt;- binom.test(i, 10)$p.value
+}
+pval
+```
+
+```
+##  [1] 0.001953125 0.021484375 0.109375000 0.343750000
+##  [5] 0.753906250 1.000000000 0.753906250 0.343750000
+##  [9] 0.109375000 0.021484375 0.001953125
+```
+
+---
+
+## よりみち: 制御構文 (6/)
+
+奥村 (2016, p.37) では for を使わない方法が紹介されている。
+
+
+```r
+&gt; p &lt;- sapply(0:10, function(x) binom.test(x, 10, 0.5)$p.value)
+&gt; p
+```
+
+```
+##  [1] 0.001953125 0.021484375 0.109375000 0.343750000
+##  [5] 0.753906250 1.000000000 0.753906250 0.343750000
+##  [9] 0.109375000 0.021484375 0.001953125
+```
+
+ベクトルに対して適用できない関数をベクトルに適用する方法はいくつかあるので，R に慣れてきたらしらべてみよう。
+
+---
+
+## p値の性質 (1/)
+
+ランダムに 10回コイン投げをする。1回表がでたときの p値は 0.02 である。1回表が出る確率は 0.01 である。この確率を使えばp値が 0.05未満になる確率を計算できそう
+
+
+
+```r
+&gt; p[p &lt; 0.05]    # p &lt; 0.05 なっている p値
+```
+
+```
+## [1] 0.001953125 0.021484375 0.021484375 0.001953125
+```
+
+
+```r
+&gt; q &lt;- dbinom(0:10, 10, 0.5)
+&gt; q[p &lt; 0.05]    # p &lt; 0.05 になる表の回数がでる確率
+```
+
+```
+## [1] 0.0009765625 0.0097656250 0.0097656250 0.0009765625
+```
+
+
+```r
+&gt; sum(q[p &lt; 0.05])   # p &lt; 0.05 になる確率
+```
+
+```
+## [1] 0.02148438
+```
+
+---
+
+## p値の性質 (2/)
+
+コイン投げの回数を増やす。何をやっているかを考えてみよう（知らない `if` が出現しているが，if は「もし〇〇なら」だ）
+
+
+```r
+n &lt;- 2000
+alpha &lt;- 0.05
+
+prob &lt;- 0
+for (i in 0:n){
+  if (binom.test(i, n)$p.value &lt; 0.05) {
+    prob &lt;- prob + dbinom(i, n, 0.5)
+  }
+}
+prob
+```
+
+```
+## [1] 0.04655282
+```
+
+答えが 0.05 に近いことに注意
+
+---
+
+## p値の性質 (3/)
+
+連続値の分布であれば
+
+「p値が `\(\alpha\)`以下になる確率は `\(\alpha\)`」
+
+ということが言える。二項分布は正規分布に収束するので試行の回数が大きければ近似的にこれが言える。p値は一様分布する確率変数である。
+
+帰無仮説が正しくても5% の確率で `\(p &lt; \alpha\)` となり，帰無仮説を棄却してしまう。したがって，
+**有意水準というのは帰無仮説が正しいのに間違って棄却してしまう確率** である。
+
+つまり，後で出てくる第1種の誤りの確率である。
+
+---
+
+## 帰無仮説と対立仮説
+
+**帰無仮説 (null hypothesis):**  
+検証したい仮説。分析対象の分布を定めるために使う仮定  
+例えば，`\(\theta = 0.5\)` など。
+
+**対立仮説 (alternative hypothesis) :**  
+帰無仮説が棄却されたときに採用する仮説のこと。  
+`\(\theta \neq 0.5\)` や `\(\theta &gt; 0.5\)` など。
+
+---
+
+## 2種類の誤り
+
+帰無仮説が正しいのにもかかわらず，帰無仮説を棄却してしまうことを **第1種の誤り (Type I error)** という。
+
+対立仮説が正しいのにもかかわらず，帰無仮説を棄却できないことを
+**第2種の誤り (Type II error)** という。
+
+|                      | 帰無仮説が真 | 対立仮説が真 |
+|---------------------:|:------------:|:------------:|
+| 帰無仮説を棄却       | 第1種の誤り  | 正しい判定   |
+| 帰無仮説を棄却しない | 正しい判定   | 第2種の誤り  |
+
+
+同じ `\(\alpha\)` であれば第2種の誤りの確率がもっとも低くなるような検定が望ましい検定である。
+
+---
+
+## p値に関する注意 (1/)
+
+**p値が小さいからと言って，効果が大きいというわけではない** 
+例えば，表が出る確率が `\(\theta = 0.5001\)` であるコインを使おう。
+100回投げる。
+
+
+
+```r
+&gt; (nhead &lt;- rbinom(1, 100, 0.5001))
+```
+
+```
+## [1] 47
+```
+
+これは 5%水準で優位にならないだろう。
+
+
+```r
+&gt; binom.test(nhead, 100, p = 0.5)$p.value
+```
+
+```
+## [1] 0.6172994
+```
+
+---
+
+## p値に関する注意 (2/)
+
+もっとデータをとってみる。
+
+
+```r
+&gt; nhead2 &lt;- rbinom(1, 250000000, 0.5001)
+&gt; binom.test(nhead2, 250000000, p = 0.5)$p.value
+```
+
+```
+## [1] 0.02257382
+```
+
+裏表の確率は実用上は同じであるように見える。たぶんFIFAワールドカップの審判だって文句を言わないだろう。
+
+しかし，2億５千万回のコイン投げをすればこのわずかな違いを発見できる。頑張ってデータを集めれば実質的にはなんの効果もない差を見つけてしまうかもしれない。
+
+
+---
+
+## 多重検定
+
+こういうことはしない。
+
+- たくさんの検定結果をみて，有意差があったものだけ取り出してレポートする
+- 実験 or 調査をして，p値が大きかったからもう少しデータを取ってくる。これを p値が望みの水準に下がるまで繰り返す。
+
+有意水準は間違って帰無仮説を棄却してしまう確率なので， `\(n\)`個の検定のうち 1つ以上が間違って帰無仮説を棄却している確率
+`\(1 - (1-\alpha)^n\)`。 `\(\alpha = 0.05\)`, `\(n = 20\)` なら 64% の確率
+
+
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day04")
+```
+チュートリアルがはじまるよ。
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
