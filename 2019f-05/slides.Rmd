@@ -1,0 +1,865 @@
+---
+title: R Club - Day 05
+subtitle: "https://opueco.github.io/rclub-slides/2019f-05/slides.html"
+author: Kenji Sato
+date: 2019/6/5
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: ["../asset/remark-css/style.css"]
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+header-includes: ['<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">', '<link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">']
+---
+
+```{r setup, include=FALSE}
+set.seed(100)
+knitr::opts_chunk$set(fig.align = "center", prompt = TRUE, dpi = 196)
+options(width = 63)
+```
+
+## 復習
+
+- 仮説検定の考え方
+- 二項検定
+- t検定
+
+---
+
+## 今日の範囲
+
+- 奥村§3.5, 3.7, 3.8
+  - ただし 3.7, 3.8 は関連問題を紹介しているので各自で読む
+- スキップの項
+  - §3.6 はさんざんやったのでスキップ
+  - 最尤法の話は必要に迫られたらやる
+
+---
+
+**t検定の例**
+
+ある機械で生産された10個の製品の重量を測定したところ  
+101.1, 103.2, 102.1, 99.2, 100.5, 101.3, 99.7, 100.5, 98.9, 101.4  
+のような結果を得た。母平均は100gと考えてよいか。有意水準5%で検定せよ。 (東大統計教室『統計学入門』p.252))
+
+```{r, prompt=FALSE}
+w <- c(101.1, 103.2, 102.1, 99.2, 100.5, 101.3, 
+       99.7, 100.5, 98.9, 101.4)
+t.test(w, mu = 100)
+```
+
+
+---
+
+## 仮説を変えてみる (1/)
+
+帰無仮説 $\mu = 100$ のもとでは，p値は 0.09。5%水準では有意ではない。
+$\mu = 101$ にするとどうなる？
+
+```{r, prompt=FALSE}
+t.test(w, mu = 101)
+```
+
+---
+
+## 仮説を変えてみる (2/)
+
+$\mu = 102$ にすると？
+
+```{r, prompt=FALSE}
+t.test(w, mu = 102)
+```
+
+p値は $0.02$。データは $\mu = 102$ をサポートしないようだ。
+
+---
+
+## 信頼区間 confidence interval
+
+この数字が変化していないことにお気づきだろうか？
+
+```
+## 95 percent confidence interval:
+##   99.8449 101.7351
+```
+
+95% 信頼区間（confidence interval）というのは，5%水準で帰無仮説が棄却されないような帰無仮説の範囲である。したがって，
+
+.box2[
+信頼区間の中におさまるように仮説を選べば p値は有意水準を下回らない。逆に，信頼区間の外側に仮説を選べば p値は有意水準を上回る。
+]
+
+
+---
+
+## 信頼区間に関する注意
+
+「真の母平均が 95% の確率で信頼区間の中に入る」ということでは**ない**。
+
+通常，95%信頼区間の意味は次のように説明される。
+
+1. 信頼区間は確率変数であり，データを観測するたびに信頼区間が変わる。
+2. データを100回観測して 100通りの信頼区間を作ったら，95通りは真の未知母数を含む。
+
+動くのが信頼区間で，母数は動かないというのをイメージできればOK。図を使って見てみよう。
+
+---
+
+**真の母数（未知）** $\mu$ を持つ未知の分布にしたがって生成されたデータを持っている。その **標本平均（固定値）** は $\bar{x}$
+
+```{r ci-image-0, include = FALSE}
+draw_axis <- function(xlim, ylim, ...) {
+  plot(NULL, xlim = xlim, ylim = ylim, axes = FALSE, xlab = "", ylab = "", ...)
+  arrows(xlim[1], 0, xlim[2], 0, length = 0.1)
+}
+
+draw_density <- function(dfunc, xlim, ...){
+  curve(dfunc(x, ...), add = TRUE, from = xlim[1], to = xlim[2])
+}
+
+draw_center <- function(v, ylim, ...){
+  segments(v, ylim[1], v, ylim[2], ...)
+}
+
+draw_points <- function(x, y, labs, ...) {
+  text(x, rep_len(y, length(x)), labs, ...)
+  
+  dots <- list(...)
+  if (is.null(dots$col)){
+    dots$col <- "black"
+  }
+  points(x, rep_len(0, length(x)), pch = 16, col = dots$col)
+}
+draw_reject <- function(center, qfunc, dfunc, alpha, ...){
+  q <- center + seq(qfunc(1 - alpha / 2, ...), qfunc(0.999, ...), length.out = 50)
+  polygon(c(q[1], q, q[length(q)]), c(0, dfunc(q - center, ...), 0), col = rgb(1, 0, 0, 0.2), lty = 0)
+  
+  q <- center + seq(qfunc(0.001, ...), qfunc(alpha / 2, ...), length.out = 50)
+  polygon(c(q[1], q, q[length(q)]), c(0, dfunc(q - center, ...), 0), col = rgb(1, 0, 0, 0.2), lty = 0)
+}
+
+update_color <- function(colors, new, default = "gray50") {
+  colors[length(colors)] <- default
+  colors <- c(colors, new)
+}
+
+update_label <- function(labels, new, default = ""){
+  labels[length(labels)] <- default
+  labels <- c(labels, new)
+}
+
+```
+
+
+```{r ci-image-2, out.height=650, echo=FALSE}
+xlim <- c(-6, 6)
+ylim <- c(-0.2, 0.42)
+xlab_pos <- -0.03
+mu <- 0
+xbar <- 1.5
+
+draw_axis(xlim, ylim)
+draw_density(dnorm, xlim)
+draw_center(v = mu, ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar), y = xlab_pos, 
+            labs = c(expression(mu), expression(bar(italic(x)))), 
+            cex = 1.4, pch = 16)
+
+```
+
+---
+
+データから $\mu$ について何がわかるか？
+
+```{r ci-image-1, out.height=650, echo=FALSE}
+xlim <- xlim + xbar
+i <- 0
+colors <- c("gray50", "black")
+labels <- c(expression(mu), expression(bar(italic(x))))
+            
+draw_axis(xlim, ylim)
+#draw_density(dnorm, xlim)
+#draw_center(v = mu, ylim = c(- 0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar), y = xlab_pos, 
+            labs = labels,
+            col = colors,
+            cex = 1.4, pch = 16)
+
+```
+
+---
+
+仮説検定の考え方を使う。色付き部分は 5%。 $\mu = \mu_0$ は棄却
+
+```{r ci-image-3, out.height=650, echo=FALSE}
+mu0 <- c(-0.8, - 0.6, -0.46, -0.3, 0, 0.3, 1.0, 2.0, 2.5, 3.0, 3.46)
+
+i <- i + 1
+colors <- c(colors, "black")
+labels <- c(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+
+```
+
+---
+
+$\mu_0$ を増やしてみる。これも棄却。
+
+```{r ci-image-4, out.height=650, echo=FALSE}
+i <- i + 1
+colors <- update_color(colors, "black")
+labels <- update_label(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+```
+
+---
+
+さらに $\mu_0$ を増やしてみる。これはぎりぎり棄却されない。
+
+```{r ci-image-5, out.height=650, echo=FALSE}
+i <- i + 1
+colors <- update_color(colors, "red")
+labels <- update_label(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+```
+
+---
+
+さらに $\mu_0$ を増やしてみる。棄却されない。
+
+```{r ci-image-6, out.height=650, echo=FALSE}
+i <- i + 1
+colors <- update_color(colors, "red", "red")
+labels <- update_label(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+```
+
+---
+
+さらに $\mu_0$ を増やしてみる。やっぱり棄却されない。
+
+```{r ci-image-7, out.height=650, echo=FALSE}
+i <- i + 1
+colors <- update_color(colors, "red", "red")
+labels <- update_label(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+```
+
+---
+
+
+さらに $\mu_0$ を増やしてみる。やっぱり棄却されない。
+
+```{r ci-image-8, out.height=650, echo=FALSE}
+i <- i + 1
+colors <- update_color(colors, "red", "red")
+labels <- update_label(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+```
+
+---
+
+さらに $\mu_0$ を増やしてみる。やっぱり棄却されない。
+
+```{r ci-image-9, out.height=650, echo=FALSE}
+i <- i + 1
+colors <- update_color(colors, "red", "red")
+labels <- update_label(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+```
+
+---
+
+
+さらに $\mu_0$ を増やしてみる。やっぱり棄却されない。
+
+```{r ci-image-10, out.height=650, echo=FALSE}
+i <- i + 1
+colors <- update_color(colors, "red", "red")
+labels <- update_label(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+```
+---
+
+
+さらに $\mu_0$ を増やしてみる。やっぱり棄却されない。
+
+```{r ci-image-11, out.height=650, echo=FALSE}
+i <- i + 1
+colors <- update_color(colors, "red", "red")
+labels <- update_label(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+```
+---
+
+
+さらに $\mu_0$ を増やしてみる。やっぱり棄却されない。
+
+```{r ci-image-12, out.height=650, echo=FALSE}
+i <- i + 1
+colors <- update_color(colors, "red", "red")
+labels <- update_label(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+```
+
+---
+
+帰無仮説の $\mu_0$ が大きくなってここまで来ると棄却される。
+
+```{r ci-image-13, out.height=650, echo=FALSE}
+i <- i + 1
+colors <- update_color(colors, "red", "red")
+labels <- update_label(labels, expression(mu[0]))
+
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = labels, col = colors, cex = 1.4, pch = 16)
+
+draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+```
+
+---
+
+赤点の入る区間が信頼区間
+
+```{r ci-image-14, out.height=650, echo=FALSE}
+draw_axis(xlim, ylim)
+draw_density(function(x) dnorm(x - mu0[i]), xlim)
+draw_density(function(x) dnorm(x - mu0[3]), xlim)
+
+draw_center(v = mu0[i], ylim = c(-0.01, ylim[2]), lty = 2)
+draw_center(v = mu0[3], ylim = c(-0.01, ylim[2]), lty = 2)
+
+draw_points(x = c(mu, xbar, mu0[1:i]), y = xlab_pos, 
+            labs = NULL, col = colors, cex = 1.4, pch = 16)
+
+#draw_reject(center = mu0[i], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+#draw_reject(center = mu0[3], dfunc = dnorm, qfunc = qnorm, alpha = 0.05)
+
+
+arrows(-0.46, 0.2, 3.46, 0.2, col = "red", length = 0.1, lwd = 2, code = 3)
+
+```
+
+---
+
+## 信頼区間の計算方法
+
+さきほどの図からわかったこと
+
+- 信頼区間の左端は，その点を仮説に選べば，データがちょうど下側 $100(1-\alpha/2)$% 点にくるような点。あるいは上側 p値が $\alpha/2$
+になる点
+- 信頼区間の右端は，その点を仮説に選べば，データがちょうど下側
+$100(\alpha/2)$% 点にくるような点。あるいは下側p値が $\alpha/2$ 
+になる点
+
+---
+
+## 信頼区間の計算 (1/)
+
+教科書的な計算方法を確認しておく。
+
+$$
+t = \frac{\bar{X} - \mu_0}{\sqrt{s^2 / n}}
+$$
+
+は自由度 $n-1$ の t-分布に従う。
+
+この t-分布の下側 $100\alpha$%点を $t_{n-1}^\alpha$ と書くとすれば
+
+$$\mathrm{Prob}\left\{
+  t_{n-1}^{\alpha / 2} \le 
+  \frac{\bar{X} - \mu_0}{\sqrt{s^2 / n}} 
+  \le t_{n-1}^{1 - \alpha/2} 
+\right\} = 1-\alpha$$
+
+
+$\mu_0$ がこの範囲に入っていれば帰無仮説は棄却されない。
+
+---
+
+## 信頼区間の計算 (2/)
+
+
+$$\mathrm{Prob}\left\{
+   t_{n-1}^{\alpha / 2}  \sqrt{\frac{s^2}{n}}
+  \le 
+  \bar{X} - \mu_0 
+  \le 
+  t_{n-1}^{1 - \alpha/2} \sqrt{\frac{s^2}{n}}   
+\right\} = 1-\alpha$$
+
+ここから $\mu_0$ の範囲を調べる
+
+
+$$\mathrm{Prob}\left\{
+   \bar{X} - t_{n-1}^{1 - \alpha / 2}  \sqrt{\frac{s^2}{n}}
+  \le 
+  \mu_0 
+  \le 
+  \bar {X} - t_{n-1}^{\alpha/2} \sqrt{\frac{s^2}{n}}   
+\right\} = 1-\alpha$$
+
+
+したがって，信頼区間は 
+
+$$\left[
+\bar{X} - t_{n-1}^{1 - \alpha / 2}\sqrt{\frac{s^2}{n}}, 
+\bar {X} - t_{n-1}^{\alpha/2} \sqrt{\frac{s^2}{n}}
+\right]$$
+
+---
+
+## 計算練習
+
+`t.test()` を使わずに，95% 信頼区間を計算しなさい。
+
+```{r, prompt = FALSE}
+w <- c(101.1, 103.2, 102.1, 99.2, 100.5, 101.3, 
+       99.7, 100.5, 98.9, 101.4)
+```
+
+--
+
+```{r}
+mean(w) - sqrt(var(w) / length(w)) * qt(0.975, length(w) - 1)
+mean(w) - sqrt(var(w) / length(w)) * qt(0.025, length(w) - 1)
+```
+
+---
+
+## 比較
+
+```{r}
+t.test(w)
+```
+
+---
+
+## ここまでのまとめ
+
+帰無仮説を動かして，得られたデータのもとで帰無仮説が棄却されない領域を探す。これが信頼区間。
+
+信頼区間の下限と上限では p値がちょうど， $1 -$ 信頼水準 になっている。
+
+つまり， p値がちょうど 5% になるような点を（2つ）見つけられれば，それが信頼区間の両端になっている。
+
+--
+
+離散確率変数の場合はp値がジャンプするのでうまくいかない。
+
+
+---
+
+## 2項検定を使った実験 (1/)
+
+「硬貨を10回投げて表が4回出た」という観測を使って，「表の出る確率は 0.5」という仮説を棄却できるか？
+
+```{r, eval=FALSE}
+binom.test(4, 10, 0.5)
+```
+
+
+---
+
+## 2項検定を使った実験 (2/)
+
+「硬貨を10回投げて表が4回出た」という観測を使って，「表の出る確率は <span style="color:red;">0.6</span>」という仮説を棄却できるか？
+
+```{r}
+binom.test(4, 10, 0.6)
+```
+
+---
+
+## 2項検定を使った実験 (3/)
+
+「硬貨を10回投げて表が4回出た」という観測を使って，「表の出る確率は <span style="color:red;">0.7</span>」という仮説を棄却できるか？
+
+```{r}
+binom.test(4, 10, 0.7)
+```
+
+
+---
+
+## 2項検定を使った実験 (4/)
+
+2項検定の場合でも信頼区間は変化していないことを確認
+
+```
+## 95 percent confidence interval:
+##  0.1215523 0.7376219
+```
+
+「仮説が 0.737... を上回れば p値が 0.5 を下回る」はず
+
+```{r}
+binom.test(4, 10, 0.73)$p.value
+```
+
+あれ？信頼区間の範囲内で帰無仮説を選んだのに， p値が 5% を下回っている。
+
+---
+
+## 離散確率変数に関する注意
+
+離散確率変数の場合，帰無仮説の少しの変化に対して（両側）p値が大きくジャンプすることがある。
+
+- 帰無仮説を動かすと「まれな現象」の範囲が変わる。
+  先週は $\theta = 0.5$ という対象な分布をみていたからあまり意識しなかった。
+- まれな現象として新しい事象が加わると有意確率が大きく増える
+
+---
+
+## 問題の概要
+
+10回硬貨を投げて2回表が観測されたとしよう。
+
+$\theta = 0.45$ であれば，平均的に10回中4.5回表が出る。だから，2回表がでることよりも8回表が出ることの方がめずらしい。 $\theta = 0.5$ になると，2回表が出ることと8回表が出ることがちょうど同じくらい珍しい。だからどちらの場合も8回表が出る確率を含める。
+
+しかし， $\theta=0.51$ になると，8回表が出ることは 2回表がでることほど珍しくなくなってしまう。だから，8回表が出る確率の分だけドーンと p値が減ってしまう。
+
+---
+
+## 両側p値の変化
+
+0.45 → 0.5 の変化はバーの高さが変わるだけなので，p値はなめらかに変化する。0.5 → 0.51 の変化はバーが1つすっぽり抜けてしまうので不連続だ。
+
+```{r binom-graph4, out.width=700, fig.asp=0.5, echo=FALSE}
+opar <- par(mfrow = c(1, 3))
+
+bar.color <- rep("white", 11)
+bar.color[1:3] <- rgb(1, 0, 0, 0.2)
+bar.color[9:11] <- rgb(1, 0, 0, 0.2) 
+barplot(dbinom(0:10, 10, 0.45), names.arg = 0:10, col = bar.color, 
+        main = "θ = 0.45")
+
+bar.color <- rep("white", 11)
+bar.color[1:3] <- rgb(1, 0, 0, 0.2)
+bar.color[9:11] <- rgb(1, 0, 0, 0.2) 
+barplot(dbinom(0:10, 10, 0.5), names.arg = 0:10, col = bar.color, 
+        main = "θ = 0.5")
+
+bar.color <- rep("white", 11)
+bar.color[1:3] <- rgb(1, 0, 0, 0.2)
+bar.color[9] <- rgb(0, 0.6, 1, 0.15)
+bar.color[10:11] <- rgb(1, 0, 0, 0.2) 
+barplot(dbinom(0:10, 10, 0.51), names.arg = 0:10, col = bar.color, 
+        main = "θ = 0.51")
+
+par(opar)
+```
+
+
+---
+
+## 解決策：片側p値を使う
+
+平均（帰無仮説）を中心に, 観測されたデータを裏返して確率を計算するからこんなことが起こる。
+
+- データと同じかより多くの表が出る確率（上側p値）
+- データと同じかより少なく表が出る確率（下側p値）
+
+だけを使えばこんなことは起こらない。
+
+`binom.test()` の信頼区間も片側p値に基づいて計算されている。
+
+---
+
+**上側p値**
+
+```{r binom-graph5, out.width=450, fig.asp=0.5, echo=FALSE}
+opar <- par(mfrow = c(1, 3))
+
+bar.color <- rep("white", 11)
+bar.color[3:11] <- rgb(1, 0, 0, 0.2) 
+barplot(dbinom(0:10, 10, 0.2), names.arg = 0:10, col = bar.color, 
+        main = "θ = 0.2")
+
+bar.color <- rep("white", 11)
+bar.color[3:11] <- rgb(1, 0, 0, 0.2) 
+barplot(dbinom(0:10, 10, 0.5), names.arg = 0:10, col = bar.color, 
+        main = "θ = 0.5")
+
+bar.color <- rep("white", 11)
+bar.color[3:11] <- rgb(1, 0, 0, 0.2) 
+barplot(dbinom(0:10, 10, 0.7), names.arg = 0:10, col = bar.color, 
+        main = "θ = 0.8")
+
+par(opar)
+```
+
+**下側p値**
+
+```{r binom-graph6, out.width=450, fig.asp=0.5, echo=FALSE}
+opar <- par(mfrow = c(1, 3))
+
+bar.color <- rep("white", 11)
+bar.color[0:3] <- rgb(1, 0, 0, 0.2) 
+barplot(dbinom(0:10, 10, 0.2), names.arg = 0:10, col = bar.color, 
+        main = "θ = 0.2")
+
+bar.color <- rep("white", 11)
+bar.color[0:3] <- rgb(1, 0, 0, 0.2) 
+barplot(dbinom(0:10, 10, 0.5), names.arg = 0:10, col = bar.color, 
+        main = "θ = 0.5")
+
+bar.color <- rep("white", 11)
+bar.color[0:3] <- rgb(1, 0, 0, 0.2) 
+barplot(dbinom(0:10, 10, 0.7), names.arg = 0:10, col = bar.color, 
+        main = "θ = 0.8")
+
+par(opar)
+```
+
+---
+
+## `binom.test()` の信頼区間 (1/)
+
+`binom.test()` で出力される信頼区間を自力で計算してみよう。
+
+```{r}
+binom.test(4, 10)
+```
+
+---
+
+## `binom.test()` の信頼区間 (2/)
+
+
+0 から 4 の値を取る確率 `sum(dbinom(0:4, 10, x))` が 2.5% になる `x` が95%信頼区間の上端
+
+4 から 10 の値を取る確率 `sum(dbinom(4:10, 10, x))` が 2.5% になる `x` が95%信頼区間の下端
+
+---
+
+## `binom.test()` の信頼区間 (3/)
+
+```{r pvals, prompt=FALSE, eval=FALSE}
+x <- 0:100 / 100
+p_up <- sapply(x, function(t) sum(dbinom(4:10, 10, t))) 
+p_lo <- sapply(x, function(t) sum(dbinom(0:4, 10, t))) 
+plot(x, p_up, type = "l", xlab = "θ", ylab = "p")
+lines(x, p_lo)
+
+abline(h = 0.025, col = "red")
+polygon(c(0.1215523, 0.7376219, 0.7376219, 0.1215523), 
+        c(-0.1, -0.1, 0.025, 0.025), col=rgb(1,0,0,0.1), lty=0)
+```
+
+---
+
+## `binom.test()` の信頼区間 (4/)
+
+```{r ref.label="pvals", out.height=500, echo=FALSE}
+```
+
+---
+
+## uniroot
+
+方程式 $f(x) = 0$ の解を範囲 $(a, b)$ の中で見つける関数。  
+$f(a)$ と $f(b)$ の符号が逆でないとだめ。
+
+```{r, eval=FALSE}
+quadratic <- function(x) x ^ 2 - 1
+uniroot(quadratic, c(0, 2), tol = 1e-6)
+```
+
+```
+*## $root
+*## [1] 1
+## 
+## $f.root
+## [1] 4.643496e-07
+## 
+## $iter
+## [1] 7
+## 
+## $init.it
+## [1] NA
+## 
+## $estim.prec
+## [1] 5e-07
+```
+
+---
+
+## 
+
+$$\sum_{r=4}^{10} {}_{10}C_r \theta^r (1-\theta)^{10-r} = 0.025$$
+
+```{r, prompt=FALSE}
+uniroot(function(t) sum(dbinom(4:10, 10, t)) - 0.025, 
+        interval=c(0.1,0.8), tol=1e-8)
+```
+
+---
+
+## 
+
+$$\sum_{r=0}^{4} {}_{10}C_r \theta^r (1-\theta)^{10-r} = 0.025$$
+
+```{r, prompt=FALSE}
+uniroot(function(t) sum(dbinom(0:4, 10, t)) - 0.025, 
+        interval=c(0.1,0.8), tol=1e-8)
+```
+
+---
+
+**2項検定の例題: 統計検定2級（'18/11）**
+
+.pull-left[
+次の表は, 2017年に実施された, JR北海道の利用状況に関する調査結果である。調査は北海道の18歳以上の男女2067人に行われ, 回答数は 1338人であった。この調査結果は, 母集団を北海道の 18歳以上の男女とし, 標本サイズ 1338の単純無作為抽出に基づくものとみなす。
+
+ほぼ毎日利用した人の割合の95% 信頼区間を求めよ。
+]
+
+.pull-right[
+
+| 利用頻度           | 割合  |
+|--------------------|-------|
+| ほぼ毎日           | 2.0%  |
+| 週に数回程度       | 2.5%  |
+| 月に数回程度       | 9.0%  |
+| 年に数回程度       | 26.8% |
+| ほとんど利用しない | 58.9% |
+| わからない，無回答 | 0.8%  |
+
+]
+
+---
+
+```{r}
+binom.test(floor(1338 * 0.02), 1338, 0.02)$conf.int
+binom.test(ceiling(1338 * 0.02), 1338, 0.02)$conf.int
+```
+
+正規近似を使って次のように近似的に計算することもできる。
+
+```{r}
+0.02 + qnorm(0.025) * sqrt(0.02 * 0.98 / 1338)
+0.02 + qnorm(0.975) * sqrt(0.02 * 0.98 / 1338)
+```
+
+---
+
+## 内閣支持率（NHK世論調査）
+
+ＮＨＫは今月10日から３日間、全国の18歳以上の男女を対象にコンピューターで無作為に発生させた固定電話と携帯電話の番号に電話をかける「ＲＤＤ」という方法で世論調査を行いました。
+
+調査の対象となったのは2333人で、54％に当たる1260人から回答を得ました。
+
+それによりますと、安倍内閣を「支持する」と答えた人は、先月の調査より１ポイント上がって48％だったのに対し、「支持しない」と答えた人は先月より３ポイント下がって32％でした。
+
+<http://www.nhk.or.jp/senkyo/shijiritsu/> ('19/6/1 閲覧)
+
+---
+
+## 支持率は上昇したか？
+
+標本サイズ1260のランダムサンプルとして検定する。
+
+--
+
+```{r}
+binom.test(605, 1260, p = 0.47)
+```
+
+---
+
+## 不支持率は低下したか？
+
+標本サイズ1260のランダムサンプルとして検定する。
+
+--
+
+```{r}
+binom.test(403, 1260, p = 0.35)
+```
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day05")
+```
+チュートリアルがはじまるよ。
