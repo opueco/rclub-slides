@@ -158,6 +158,15 @@ ul li:before {
   color: black;
 }
 
+ul li ul li:before {
+  font-family: "Font Awesome 5 Free";
+  content: "\f101";
+  position: absolute;
+  font-weight: 900;
+  left : 0;
+  color: black;
+}
+
 /* https://saruwakakun.com/html-css/reference/box */
 .box2 {
     padding: 0.5em 1em;
