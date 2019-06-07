@@ -1,0 +1,489 @@
+---
+title: R Club - Day 06
+subtitle: "https://opueco.github.io/rclub-slides/2019f-06/slides.html"
+author: Kenji Sato
+date: 2019/6/5
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: ["../asset/remark-css/style.css"]
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+header-includes: ['<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">', '<link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">']
+---
+
+```{r setup, include=FALSE}
+set.seed(100)
+interval <- rexp(80, 3)
+knitr::opts_chunk$set(fig.align = "center", prompt = TRUE, dpi = 196)
+options(width = 63)
+```
+
+## 先週やったこと
+
+- 信頼区間
+  - 正規分布/t分布に基づく計算方法
+  - 二項分布に基づく計算方法
+
+---
+
+## 今日やること
+
+- 奥村 4章
+- ポアソン過程
+    - 事件の発生タイミングの確率モデル
+    - 事件発生間隔は指数分布
+    - 一定時間の事件発生数はポアソン分布
+- スキップの項
+    - 地震の話（4.3）, これは読めばわかる
+    - 放射線などの具体例は大幅にスキップ (4.4, 4.5)
+
+---
+
+```{r pois-anime,  fig.show='animate', fig.width=4, fig.height=3, interval=0.05, echo=FALSE, cache=TRUE}
+time_of_events <- cumsum(interval)
+time_of_events <- time_of_events[time_of_events <= 20]
+time <- seq(0, 20, length.out = 200)
+
+for (t in time) {
+#  Sys.sleep(interval[i])
+  plot(NULL, xlim = c(0, 20), ylim = c(0, 1.3), 
+       xlab = "TIME ELAPSED", ylab = "", axes=FALSE)
+  axis(1)
+  points(t, 0.1, pch=16, cex=1.5)
+  events <- time_of_events[time_of_events <= t]
+  if (length(events) < 1) next
+  segments(events, 0.2, events, 1)
+}
+```
+
+---
+
+## ポアソン過程
+
+ランダムに発生するイベントのモデル。
+
+- 連続時間の時間軸の上で離散的な現象を観測する
+    - 連続時間の「確率過程」
+- 様々な「イベント」のモデル
+    - 事件, 事故
+    - 客が窓口に来る
+    - 放射線が検出される
+    - e-mail，電話, などなど
+
+
+---
+
+
+## ポアソン分布 (Poisson distribution）
+
+**ポアソン分布**: ポアソン過程にしたがうイベントが一定時間に起こる「回数」の確率分布
+
+確率関数 ( $k$回起こる確率, $k \ge 0$)
+
+$$p_k = \frac{\lambda^k e^{-\lambda}}{k!}$$
+
+$\lambda \ge 0$ は単位時間にイベントが起こる「平均」回数 
+
+単位時間は1秒とか1年とか
+
+---
+
+## ポアソンの極限定理
+
+二項分布の確率 
+
+$${}_n C_k p^k (1-p)^{n-k}$$
+
+を $\lambda = np$ を一定に保ったまま $n \to \infty$ とするとポアソン分布の確率になる。
+実際，
+
+
+$$\begin{aligned}
+{}_n C_k p^k (1-p)^{n-k} 
+&= \frac{n!}{k!(n-k)!}
+\left(\frac{\lambda}{n}\right)^k 
+\left(1-\frac{\lambda}{n}\right)^{n-k} \\
+&\to
+\frac{\lambda^k e^{-\lambda}}{k!}
+\end{aligned}$$
+
+を示すことができる。
+
+
+---
+
+## 平均と分散 (1/)
+
+$$\begin{aligned}
+\sum_{k = 0}^\infty p_k
+&= 
+\sum_{k = 1}^\infty \frac{\lambda^k e^{-\lambda}}{k!}\\
+&=
+e^{-\lambda} 
+\sum_{k = 0}^\infty \frac{\lambda^{k}}{k!}\\
+&=
+e^{-\lambda} e^{\lambda}\\
+&=
+1
+\end{aligned}$$
+
+---
+
+## 平均と分散 (2/)
+
+$$\begin{aligned}
+\sum_{k = 0}^\infty k p_k
+&= 
+\sum_{k = 1}^\infty k p_k\\
+&=
+\sum_{k = 1}^\infty k \frac{\lambda^k e^{-\lambda}}{k!}\\
+&=
+\lambda e^{-\lambda} 
+\sum_{k - 1= 0}^\infty \frac{\lambda^{k-1}}{(k-1)!}\\
+&=
+\lambda e^{-\lambda} e^{\lambda}\\
+&=
+\lambda
+\end{aligned}$$
+
+---
+
+## 平均と分散 (3/)
+
+$\mathrm{Var}(X) = \mathbb{E}[X(X - 1)] - \mathbb{E}[X](\mathbb{E}[X] - 1)$ に注意する。
+
+$$\begin{aligned}
+\sum_{k = 2}^\infty k(k-1) p_k
+&= 
+\sum_{k = 2}^\infty  
+\frac{\lambda^k e^{-\lambda}}{(k-2)!}\\
+&= 
+\lambda^2
+\end{aligned}$$
+
+$$\mathrm{Var}(X) = \lambda^2 - \lambda(\lambda - 1) = \lambda$$
+
+---
+
+## R の関数
+
+- `dpois(x, lambda)`
+- `ppois(q, lambda)`
+- `qpois(p, lambda)`
+- `rpois(n, lambda)`
+
+---
+
+## 練習問題
+
+1. $\lambda = 5$ のポアソン分布に従うイベントがあります。  
+   $k=0,1,\dots, 20$ 回イベントが発生する確率を図示してください。
+2. $\lambda = 10$ として同じことをしてください。
+3. 例年，1年間に平均して26回台風が上陸していたとします。
+   ある年に30回上陸したとして，台風が異常に多く発生したと言えるでしょうか？。
+   （30回以上台風が上陸する確率は？）
+
+
+---
+
+## ポアソン過程の検定
+
+教科書§4.3 例
+
+ポケットガイガーの放射線カウントデータ。1200秒観測
+
+- 1つは「[やさしお](https://www.ajinomoto.co.jp/yasashio/)」の上に置く。38回検知
+- もう1つは机の上に普通におく。17回検知
+
+「やさしお」の上に置いたときとそうでないときでカウントが違うといえるかどうか？
+
+--
+
+`binom.test(38, 38 + 17)`
+
+---
+
+## `poisson.test()` (1/)
+
+さて，上の問題3 にはすでに検定の考え方がでてきていますが，検定をするための関数を紹介しておきましょう。
+
+```{r}
+poisson.test(10)
+```
+
+---
+
+## `poisson.test()` (2/)
+
+一定の時間の間に何かが10回観測された。発生回数がポアソン分布に従うとすると，
+平均は 4.8 から 18.4 の間に入っていると考えるのがよさそう。
+
+まったく何も観測されなかったら？
+
+```{r}
+poisson.test(0)$conf.int
+```
+
+ずっと起きていないイベントがこれからも起こらないとは言えない。
+
+---
+
+## 信頼区間
+
+2項分布の場合と同様に，ポアソン分布の信頼区間も片側p値を用いて導出する。
+5回観測された場合。
+
+```{r, prompt=FALSE}
+x <- 0:100 / 100
+# 信頼区間の左端
+uniroot(function(t) 1 - sum(dpois(0:4, lambda = t)) - 0.025, 
+        c(1, 3), tol = 1e-8)$root
+
+# 右端
+uniroot(function(t) sum(dpois(0:5, lambda = t)) - 0.025, 
+        c(5, 15), tol = 1e-8)$root
+```
+
+---
+
+## 指数分布 (1/)
+
+乱数列がポアソン過程であれば，差分を取ると指数分布になる。
+
+指数分布の密度関数
+
+$$
+f(x) = \lambda e^{-\lambda x}
+$$
+
+これは次のイベントが起こるまでの「待ち時間」のモデルになる。
+
+---
+
+## ポアソン過程の作り方 (1/)
+
+最初に見せた動画は指数分布の累積和で作った確率変数
+
+```{r, include=FALSE}
+set.seed(201)
+```
+
+```{r, prompt=FALSE}
+(x <- rexp(25))
+(y <- cumsum(x))    # 累積和
+```
+
+---
+
+## ポアソン過程の作り方 (2/)
+
+```{r poisplot, out.height=300, fig.asp=0.5, prompt=FALSE}
+plot(NULL, xlim = c(0, 20), ylim = c(0, 1), 
+     xlab = "TIME ELAPSED", ylab = "", axes=FALSE)
+  axis(1)
+  segments(y, 0.2, y, 0.9)
+```
+
+---
+
+## ポアソン過程の検定
+
+```{r}
+y
+```
+
+これはポアソン過程か？
+
+---
+
+## Q-Q plot (1/)
+
+奥村 p. 61 のコード
+
+```{r qq, out.height=300, prompt=FALSE}
+dy <- diff(y)
+qqplot(qexp(ppoints(dy)), dy)
+qqline(dy, distribution = qexp)
+```
+
+---
+
+## Q-Q plot (2/)
+
+Quantile-Quantile Plot。データの分位点と理論的な分位点を比較して，データの背後にある分布を調べる方法。
+
+例えば， $p=0.2$ の場合のデータの Quantile は
+
+```{r}
+x <- rnorm(100)
+quantile(x, 0.2)
+```
+
+理論的な Quantile は
+
+```{r}
+qnorm(0.2)
+```
+
+---
+
+## Q-Q plot (3/)
+
+$p$ を変えても似たような値が出てくる。
+
+```{r}
+x <- rnorm(100)
+quantile(x, 0.8)
+```
+
+理論的な Quantile は
+
+```{r}
+qnorm(0.8)
+```
+
+この $p$ を色々と動かして，経験Quantile と理論Quantile の関係をプロットしたものが Q-Q プロット。
+
+---
+
+## Q-Q plot (4/)
+
+```{r qq-man, prompt=FALSE, out.height=400}
+p <- ppoints(x)   # 分位点を計算する確率を作る
+plot(qnorm(p), quantile(x, p))
+lines(quantile(x, p), quantile(x, p))
+```
+
+---
+
+## Q-Q plot (5/)
+
+練習問題:
+
+`qqplot` と `qqline` を使って前ページのコードを書き直してみてください。
+
+---
+
+## 番外編: コミュニケーションツールとしてのR
+
+基本的な統計分析の手法をいくつか学び，作図もいろいろやりました。
+
+ここでは，ちょっと寄り道をして「コミュニケーションのためにRを使う方法」を学んでほしいと思います。
+レポートを書くときに活用できれば，もっと R を使ってみようという気持ちが強まると思います。
+
+これは奥が深い分野なのですが，今日は「Rで作った図をWordに挿入する」ということをやってみます。
+
+---
+
+## 図の「ソースコード」が重要
+
+肝に銘じていただきたいことがあります。
+
+1. 作図のコードはスクリプトに保存しておく
+2. プロット画面に表示される「Export」は使わない
+
+1ヶ月後の自分が「この図はどうやって作ったんだ？」と悩む可能性をできるだけ減らしましょう。
+
+(例) 私のマクロ経済学I の講義資料の図は [ここ](https://github.com/kenjisato/mau19) においてあります。コードは R フォルダ，出力された図は Graphics フォルダに保存されています。
+
+---
+
+## 画像の保存形式: EMF
+
+私は LaTeX を使って資料を作るので，PDF ファイルで図を保存するようにしています。
+
+MS Word でレポート書く場合は EMF 形式で保存のがベストです。やってみましょう。
+
+まずは必要なパッケージをインストールします。
+
+```{r, prompt=FALSE, eval=FALSE}
+install.packages("devEMF")
+```
+
+---
+
+## devEMF の使い方 (1/)
+
+基本はこれだけです：
+
+```r
+devEMF::emf()
+
+## ここに作図のためのコードを書く
+
+dev.off()
+```
+
+`devEMF::emf()` はデフォルトでは `Rplots.emf` という名前で画像を保存します。保存する画像の名前くらいは付けておくほうが良いでしょう。
+
+---
+
+## devEMF の使い方 (2/)
+
+```{r, eval=FALSE, prompt=FALSE}
+devEMF::emf("dnorm-default.emf")
+curve(dnorm(x), xlim = c(-3, 3))
+dev.off()
+```
+
+---
+
+## devEMF の使い方 (3/)
+
+デフォルトのフォントでは publication-ready という感じがせず，そこはかとない素人っぽさを感じる。
+そこで `family = "Times"` を指定してみます
+
+
+```{r, eval=FALSE, prompt=FALSE}
+devEMF::emf("dnorm-times.emf", family = "Times")
+curve(dnorm(x), xlim = c(-3, 3))
+dev.off()
+```
+
+---
+
+## devEMF の使い方 (4/)
+
+数学の書き方みたいにイタリック体にしたい。R はそういう要望にも答えてくれます。
+
+ただし独特な記法を使う必要があります。
+
+```{r, eval=FALSE, prompt=FALSE}
+devEMF::emf("dnorm-italic.emf", family = "Times")
+curve(dnorm(x), xlim = c(-3, 3), 
+      xlab = expression(italic(x)), 
+      ylab = expression(italic(f(x))))
+dev.off()
+```
+
+奥村ウェブ記事「[Rで数式を書く](https://oku.edu.mie-u.ac.jp/~okumura/stat/math.html)」に簡単な解説がある。
+
+---
+
+## MS Word への貼付け
+
+このようにして作った EMFファイルを Word に貼り付けてみよう。
+
+Word の中で図を拡大してもギザギザになったりしない（EMF はベクタ形式のファイル）ことを確認しよう。
+
+---
+
+## Word or RMarkdown?
+
+図もコードも文章も全部まとめて RStudio で書いてしまうということもできる。RMarkdown という形式を使う。実際，このスライドは R+RStudio に knitr/rmarkdown/xaringan などもろもろのRパッケージの力を借りて作っています。
+
+でも慣れ親しんだツール（Word，PowerPoint？）を手放す必要もないと思うので，とりあえず自分が続けられそうな方式でワークフローを確立して Rとの連携を模索するとよいと思います。
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day06")
+```
+チュートリアルがはじまるよ。
