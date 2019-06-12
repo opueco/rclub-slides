@@ -247,7 +247,6 @@ e^{-\lambda} e^{\lambda}\\
 
 
 ```r
-x &lt;- 0:100 / 100
 # 信頼区間の左端
 uniroot(function(t) 1 - sum(dpois(0:4, lambda = t)) - 0.025, 
         c(1, 3), tol = 1e-8)$root
@@ -430,7 +429,7 @@ Quantile-Quantile Plot。データの分位点と理論的な分位点を比較�
 ```r
 p &lt;- ppoints(x)   # 分位点を計算する確率を作る
 plot(qnorm(p), quantile(x, p))
-lines(quantile(x, p), quantile(x, p))
+lines(qnorm(p), qnorm(p))
 ```
 
 &lt;img src="slides_files/figure-html/qq-man-1.png" height="400" style="display: block; margin: auto;" /&gt;

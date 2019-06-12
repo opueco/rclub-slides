@@ -238,7 +238,6 @@ poisson.test(0)$conf.int
 5回観測された場合。
 
 ```{r, prompt=FALSE}
-x <- 0:100 / 100
 # 信頼区間の左端
 uniroot(function(t) 1 - sum(dpois(0:4, lambda = t)) - 0.025, 
         c(1, 3), tol = 1e-8)$root
@@ -355,7 +354,7 @@ qnorm(0.8)
 ```{r qq-man, prompt=FALSE, out.height=400}
 p <- ppoints(x)   # 分位点を計算する確率を作る
 plot(qnorm(p), quantile(x, p))
-lines(quantile(x, p), quantile(x, p))
+lines(qnorm(p), qnorm(p))
 ```
 
 ---
