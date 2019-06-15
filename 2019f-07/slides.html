@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club - Day 07</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Day 07
+## <a href="https://opueco.github.io/rclub-slides/2019f-07/slides.html" class="uri">https://opueco.github.io/rclub-slides/2019f-07/slides.html</a>
+### Kenji Sato
+### 2019/6/19
+
+---
+
+
+
+
+## 先週やったこと
+
+- ポアソン過程
+  - ポアソン分布
+  - 指数分布
+- **devEMF**
+
+---
+
+## 今日やること
+
+- 奥村 5章
+- 分割表の解析 (独立性の検定)
+
+---
+
+## 分割表の例
+
+|          | 肺がんあり | 肺がんなし |
+|----------|-----------:|-----------:|
+| 喫煙あり |        231 |      23036 |
+| 喫煙なし |         26 |      10813 |
+
+
+喫煙が肺がんに影響しているといえますか？
+
+---
+
+## フィッシャーの正確検定（1/）
+
+壺の中に赤玉4個，白玉6個  
+
+&lt;img src="images/vase/vase.001.jpeg" width="500" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## フィッシャーの正確検定（2/）
+
+ランダムに5個取り出す→ 赤3個，白2個
+
+分割表を使って整理できる。
+
+--
+
+|            | 赤玉 | 白玉 | 合計 |
+|------------|-----:|-----:|-----:|
+| 取り出した |    3 |    2 |    5 |
+| まだ壺の中 |    1 |    4 |    5 |
+| 合計       |    4 |    6 |   10 |
+
+
+「取り出し方に偏りはなかった？」を調べる。
+
+---
+
+## フィッシャーの正確検定（3/）
+
+
+赤3個，白2個が出る確率は？
+
+`$$\begin{aligned}
+\frac{
+  {}_4 C_3 \times {}_6 C_2
+}{
+  {}_{10} C_5
+}
+=
+0.2380952
+\end{aligned}$$`
+
+
+
+```r
+&gt; choose(4, 3) * choose(6, 2) / choose(10, 5)
+```
+
+```
+## [1] 0.2380952
+```
+
+---
+
+## フィッシャーの正確検定（4/）
+
+偏りなく取り出した場合に，観測されたデータか，それより珍しい現象が起こる確率を調べる。これが p値
+
+取り出した数が5個, 赤玉の数が4個，白玉の数が6個という制約のもとであらゆる取り出し方を調べる。 
+
+|            | 赤玉 | 白玉 | 合計 |
+|------------|-----:|-----:|-----:|
+| 取り出した |    k |  5-k |    5 |
+| まだ壺の中 |  4-k |  k+1 |    5 |
+| 合計       |    4 |    6 |   10 |
+
+
+自由度が1つであることに注意！
+
+---
+
+## フィッシャーの正確検定（5/）
+
+
+```r
+for (k in 4:0) {
+  print(c(k, 4 - k, 5 - k, k+1))
+}
+```
+
+```
+## [1] 4 0 1 5
+## [1] 3 1 2 4
+## [1] 2 2 3 3
+## [1] 1 3 4 2
+## [1] 0 4 5 1
+```
+
+
+```r
+p &lt;- numeric(5)
+for (k in 0:4) {
+  p[k+1] &lt;- choose(4, k) * choose(6, 5 - k) / choose(10, 5)
+}
+p
+```
+
+```
+## [1] 0.02380952 0.23809524 0.47619048 0.23809524 0.02380952
+```
+
+
+---
+
+## フィッシャーの正確検定（6/）
+
+観測された確率は 0.2380952 なので，これと同じかこれよりも低い確率を足すと p値が計算できる。
+
+
+```r
+sum(p[p &lt;= p[2]])
+```
+
+```
+## [1] 0.5238095
+```
+
+同じことを `fisher.test()` を使っても調べられる。
+
+「フィッシャーの正確検定」という
+
+
+---
+
+## フィッシャーの正確検定（7/）
+
+
+```r
+&gt; fisher.test(matrix(c(3, 1, 2, 4), nrow = 2))
+```
+
+```
+## 
+## 	Fisher's Exact Test for Count Data
+## 
+## data:  matrix(c(3, 1, 2, 4), nrow = 2)
+## p-value = 0.5238
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##    0.218046 390.562917
+## sample estimates:
+## odds ratio 
+##   4.918388
+```
+
+
+p値以外の部分の読み方は後ほど。
+
+
+---
+
+## `matrix()` について
+
+以下のコードを実行して結果を比較してください。
+
+
+```r
+matrix(c(1, 2, 3, 4, 5, 6))
+matrix(c(1, 2, 3, 4, 5, 6), nrow = 2)
+matrix(c(1, 2, 3, 4, 5, 6), ncol = 2)
+matrix(c(1, 2, 3, 4, 5, 6), byrow = TRUE)
+matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE)
+matrix(c(1, 2, 3, 4, 5, 6), ncol = 2, byrow = TRUE)
+```
+
+読みやすい書き方： 
+
+
+```r
+matrix(c(1, 2, 3,
+         4, 5, 6), ncol = 3, byrow = TRUE)
+```
+
+```
+##      [,1] [,2] [,3]
+## [1,]    1    2    3
+## [2,]    4    5    6
+```
+
+---
+
+## 10個中4個取り出す
+
+奥村 p. 77 のケース
+
+
+```r
+fisher.test(
+  matrix(c(3, 1,
+           1, 5), ncol = 2, byrow = TRUE)
+)
+```
+
+```
+## 
+## 	Fisher's Exact Test for Count Data
+## 
+## data:  matrix(c(3, 1, 1, 5), ncol = 2, byrow = TRUE)
+## p-value = 0.1905
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##    0.40161 930.24692
+## sample estimates:
+## odds ratio 
+##   10.29391
+```
+
+---
+
+## 最初の肺がんの例
+
+|          | 肺がんあり | 肺がんなし |
+|----------|-----------:|-----------:|
+| 喫煙あり |        231 |      23036 |
+| 喫煙なし |         26 |      10813 |
+
+
+```r
+&gt; fisher.test(matrix(c(231, 26, 23036, 10813), nrow = 2))
+```
+
+```
+## 
+## 	Fisher's Exact Test for Count Data
+## 
+## data:  matrix(c(231, 26, 23036, 10813), nrow = 2)
+## p-value = 2.517e-16
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##  2.772150 6.524531
+## sample estimates:
+## odds ratio 
+##   4.170765
+```
+
+---
+
+## 大きい分割表 (1/)
+
+|    | 内向 | 外向 |
+|----|-----:|-----:|
+| A  |  195 |  102 |
+| B  |  123 |   82 |
+| AB |   61 |   38 |
+| O  |  144 |  107 |
+
+データフレームを使うと便利。
+
+
+```r
+df &lt;- data.frame(
+  内向 = c(195, 123, 61, 144),
+  外向 = c(102, 82, 38, 107)
+)
+```
+
+---
+
+## 大きい分割表 (2/)
+
+
+```r
+fisher.test(df)
+```
+
+```
+## 
+## 	Fisher's Exact Test for Count Data
+## 
+## data:  df
+## p-value = 0.2431
+## alternative hypothesis: two.sided
+```
+
+血液型と内向性/外向性には関係がなさそう。
+
+
+---
+
+## カイ2乗検定 (1/)
+
+.pull-left[
+観測データ
+
+|      | 賛成 | 反対 | 合計 |
+|------|-----:|-----:|-----:|
+| 男   |    3 |    2 |    5 |
+| 女   |    1 |    4 |    5 |
+| 合計 |    4 |    6 |   10 |
+
+]
+
+--
+
+.pull-right[
+男女差がない場合の理論値
+
+|      | 賛成 | 反対 | 合計 |
+|------|-----:|-----:|-----:|
+| 男   |    2 |    3 |    5 |
+| 女   |    2 |    3 |    5 |
+| 合計 |    4 |    6 |   10 |
+| 割合 |  0.4 |  0.6 |   10 |
+
+]
+
+合計の行から計算した割合で，男女の賛成・反対の理論値を求める。
+
+
+---
+
+## カイ2乗検定 (2/)
+
+.pull-left[
+観測データ
+
+|      | 賛成 | 反対 | 合計 |
+|------|-----:|-----:|-----:|
+| 男   | `\(O_{11}\)` | `\(O_{12}\)` |    5 |
+| 女   | `\(O_{21}\)` | `\(O_{22}\)` |    5 |
+| 合計 |    4 |    6 |   10 |
+
+]
+
+.pull-right[
+赤白が独立な場合の理論値
+
+|      | 賛成 | 反対 | 合計 |
+|------|-----:|-----:|-----:|
+| 男   | `\(E_{11}\)` | `\(E_{12}\)` |    5 |
+| 女   | `\(E_{21}\)` | `\(E_{22}\)` |    5 |
+| 合計 |    4 |    6 |   10 |
+
+]
+
+各 `\(O_{ij}\)` を平均 `\(E_{ij}\)` のポアソン分布の実現値と考える。 
+
+`$$\frac{O_{ij} - E_{ij}}{\sqrt{E_{ij}}}\sim \mathcal{N}(0,1)$$`
+
+---
+
+## カイ2乗検定 (3/)
+
+近似的に
+
+`$$\frac{O_{ij} - E_{ij}}{\sqrt{E_{ij}}}\sim \mathcal{N}(0,1)$$`
+
+なので，
+
+`$$\sum \frac{(O_{ij} - E_{ij})^2}{E_{ij}} \sim \chi^2_{1}$$`
+
+自由度は1 （ `\(2\times2\)` 分割表に制約が3つあるから）
+
+---
+
+## カイ2乗検定 (4/)
+
+
+```r
+(observed &lt;- matrix(c(3, 1, 2, 4), nrow = 2))
+```
+
+```
+##      [,1] [,2]
+## [1,]    3    2
+## [2,]    1    4
+```
+
+
+```r
+(prop &lt;- colSums(observed) / sum(observed))
+```
+
+```
+## [1] 0.4 0.6
+```
+
+```r
+(estimated &lt;- outer(rowSums(observed), prop))
+```
+
+```
+##      [,1] [,2]
+## [1,]    2    3
+## [2,]    2    3
+```
+
+---
+
+## カイ2乗検定 (4'/)
+
+`\(x \in \mathbb{R}^m\)`, `\(y \in \mathbb{R}^n\)` に対して
+
+`$$\mathrm{outer}(x, y) = xy^\top \in \mathbb{R}^{m \times n}$$`
+
+
+
+```r
+outer(c(1, 2), c(0.2, 0.3, 0.4))
+```
+
+```
+##      [,1] [,2] [,3]
+## [1,]  0.2  0.3  0.4
+## [2,]  0.4  0.6  0.8
+```
+
+---
+
+## カイ2乗検定 (5/)
+
+
+```r
+chi2 &lt;- sum((observed - estimated) ^ 2 / estimated)
+chi2
+```
+
+```
+## [1] 1.666667
+```
+
+この統計量を使って p値を計算する。
+
+
+```r
+1 - pchisq(chi2, df = 1)
+```
+
+```
+## [1] 0.1967056
+```
+
+---
+
+## カイ2乗検定 (6/)
+
+`chisq.test()` を使っても計算できる。
+
+
+```r
+chisq.test(observed, correct = FALSE)
+```
+
+```
+## Warning in chisq.test(observed, correct = FALSE): Chi-squared
+## approximation may be incorrect
+```
+
+```
+## 
+## 	Pearson's Chi-squared test
+## 
+## data:  observed
+## X-squared = 1.6667, df = 1, p-value = 0.1967
+```
+
+---
+
+
+## 連続性補正
+
+離散分布に関する確率を連続分布で近似して計算するときに「連続性補正」というのを行う場合がある。さきほどの統計量で言えば
+
+`$$\sum \frac{(O_{ij} - E_{ij})^2}{E_{ij}}
+\longrightarrow 
+\sum \frac{(|O_{ij} - E_{ij}| - 0.5)^2}{E_{ij}}$$`
+
+とする。 `chisq.test()` はデフォルトでは連続性補正（Yates's continuity correction）を行う。`correct = FALSE` を外して再度実行してみよう。
+
+---
+
+## 練習問題
+
+次の分割表に対して独立性の検定を実施せよ。
+
+|    | 内向 | 外向 |
+|----|-----:|-----:|
+| A  |  195 |  102 |
+| B  |  123 |   82 |
+| AB |   61 |   38 |
+| O  |  144 |  107 |
+
+
+1. 検定統計量を自分で計算する方法（ヒント：行が増えた分だけ自由度も増える）
+1. `chisq.test()` を用いた方法, 連続性補正ありとなし
+1. `fisher.test()` を用いた方法
+
+---
+
+## オッズ
+
+ある事象が起こる確率を `\(p\)` とするとき，オッズを次のように定義する。
+
+`$$\mathrm{オッズ} = \frac{p}{1 - p}$$`
+
+2つ群を考える。それぞれの群において，ある事象がおこる確率を `\(p, q\)` とする。
+
+`$$\mathrm{相対危険度\ RR} = \frac{p}{q},\qquad 
+\mathrm{オッズ比\ OR} = \frac{p/(1-p)}{q/(1 - q)}$$`
+
+---
+
+## オッズ比を用いた独立性の検定 (1/)
+
+|            | Disease | Nondisease |
+|------------|---------|------------|
+| Exposed    | `\(a\)`     | `\(b\)`        |
+| Nonexposed | `\(c\)`     | `\(d\)`        |
+
+- Exposed = 暴露群
+- Nonexposed = 非暴露群（p. 81 の下から3行目はタイポ）
+
+
+$$
+\mathrm{RR} = \frac{a/(a+b)}{c/(c+d)},
+\quad
+\mathrm{OR} = \frac{a / b}{c / d}
+$$
+
+2群に差がなければ `\(\mathrm{RR} = \mathrm{OR} = 1\)` となる（帰無仮説）
+
+---
+
+## オッズ比を用いた検定 (2/)
+
+オッズ比の対数
+
+$$
+\log \mathrm{OR} = \log a - \log b - \log c + \log d
+$$
+
+は正規分布で近似できて，分散は `\(1/a + 1/b + 1/c + 1/d\)` である。
+
+これさえ知っていれば信頼区間を計算できる。
+
+---
+
+## オッズ比を用いた検定 (3/)
+
+
+```r
+x &lt;- matrix(c(231, 26, 23036, 10813), nrow = 2)
+x
+```
+
+```
+##      [,1]  [,2]
+## [1,]  231 23036
+## [2,]   26 10813
+```
+
+```r
+LOR &lt;- log(x[1, 1] * x[2, 2] / x[1, 2] / x[2, 1])
+V &lt;- sum(1 / x)
+exp(LOR + sqrt(V) * qnorm(c(0.025, 0.975)))
+```
+
+```
+## [1] 2.778561 6.259442
+```
+
+信頼区間がゼロを含んでいなければ有意差があると考える。  
+`fisher.test()` で出力される数字との違いは p. 79 を参照
+
+---
+
+## マクネマー検定 (1/)
+
+教育や実験の前後で起こった変化を検定する。
+
+つまり，以下のような表を作って `\(b\)` と `\(c\)` について検定を行う。
+
+|                  | ポストテスト合格 | ポストテスト不合格 |
+|------------------|------------------|--------------------|
+| プリテスト合格   | `\(a\)`              | `\(b\)`                |
+| プリテスト不合格 | `\(c\)`              | `\(d\)`                |
+
+
+$$
+M = \frac{(|b - c| - 1)^2}{b+c}
+$$
+
+自由度1のカイ2乗分布を用いる。 `\(-1\)` は連続性補正
+
+---
+
+
+```r
+&gt; mcnemar.test(matrix(c(6, 8, 1, 5), ncol = 2))
+```
+
+```
+## 
+## 	McNemar's Chi-squared test with continuity correction
+## 
+## data:  matrix(c(6, 8, 1, 5), ncol = 2)
+## McNemar's chi-squared = 4, df = 1, p-value = 0.0455
+```
+
+
+
+
+```r
+&gt; binom.test(1, 1 + 8)  # 2項検定を使ってもよい。
+```
+
+```
+## 
+## 	Exact binomial test
+## 
+## data:  1 and 1 + 8
+## number of successes = 1, number of trials = 9, p-value
+## = 0.03906
+## alternative hypothesis: true probability of success is not equal to 0.5
+## 95 percent confidence interval:
+##  0.002809137 0.482496515
+## sample estimates:
+## probability of success 
+##              0.1111111
+```
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day07")
+```
+チュートリアルがはじまるよ。
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
