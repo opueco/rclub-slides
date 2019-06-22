@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club - Day 09</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Day 09
+## <a href="https://opueco.github.io/rclub-slides/2019f-09/slides.html" class="uri">https://opueco.github.io/rclub-slides/2019f-09/slides.html</a>
+### Kenji Sato
+### 2019/6/26
+
+---
+
+
+
+
+## 先週やったこと
+
+- 奥村 6章
+- 2標本の差の t検定
+  - 対標本
+  - 対応のない2標本（ウェルチのt検定）
+- 一元配置分散分析
+
+先週のドリルでは二元配置分散分析について簡単に紹介しています。
+
+---
+
+## 今日やること
+
+- 相関
+
+---
+
+## クイズ: 正の相関？負の相関？
+
+&lt;img src="slides_files/figure-html/cor-quiz1-1.png" height="500" style="display: block; margin: auto;" /&gt;
+
+---
+
+## クイズ: 正の相関？負の相関？
+
+&lt;img src="slides_files/figure-html/cor-quiz2-1.png" height="500" style="display: block; margin: auto;" /&gt;
+
+---
+
+## クイズ: 相関が強いのはどちら？
+
+&lt;img src="slides_files/figure-html/cor-quiz3-1.png" height="500" style="display: block; margin: auto;" /&gt;
+
+---
+
+## クイズ: 相関が強いのはどちら？
+
+&lt;img src="slides_files/figure-html/cor-quiz4-1.png" height="500" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## 共分散
+
+2つの確率変数 `\(X\)`, `\(Y\)` の **共分散** (covariance) を次のように定義
+
+`$$\begin{aligned}
+\mathrm{Cov}(X,Y) 
+&amp;= \mathbb{E}[(X - \mathbb{E}[X])(Y - \mathbb{E}[Y])]\\
+&amp;= \mathbb{E}[XY] - \mathbb{E}[X] \mathbb{E}[Y]
+\end{aligned}$$`
+
+標本に対する定義は
+
+`$$\begin{aligned}
+\mathrm{Cov}(\{X_i\}_{i=1}^n,\{Y_i\}_{i=1}^n) 
+&amp;= \frac{1}{n-1} \sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y})\\
+&amp;= \frac{1}{n-1} \sum_{i=1}^n X_iY_i - \bar{X} \bar{Y}
+\end{aligned}$$`
+
+---
+
+## Rによる共分散の計算
+
+
+
+```r
+x &lt;- 1:5
+y &lt;- c(3, 4, 5, 2, 1)
+sum((x - mean(x)) * (y - mean(y))) / (length(x) - 1)
+```
+
+```
+## [1] -1.5
+```
+
+--
+
+
+```r
+cov(x, y)
+```
+
+```
+## [1] -1.5
+```
+
+---
+
+## 共分散の意味
+
+`\(X\)` が平均より大きいときに `\(Y\)` も平均より大きい, `\(Y\)` が平均より小さいときに `\(Y\)` も平均より小さい傾向があるときには，共分散は正になる。
+
+逆に, `\(X\)` が平均より大きいときに `\(Y\)` も平均より小さくなる傾向があれば 共分散は負になる。
+
+
+---
+
+## 相関係数 (1/)
+
+共分散は `\(X\)`, `\(Y\)` が同じ方向に動くか，反対方向に動くかを教えてくれる。
+しかし, `\(X\)`, `\(Y\)` の値の大きさによって共分散も変化してしまうので，2変数の動く方向の尺度としては使いづらい。
+
+--
+
+
+そこで，大きさを調整してやることを考える。要するに標準化する。
+
+`$$\frac{X - \mathbb{E}[X]}{\sigma_X},
+\qquad \frac{Y - \mathbb{E}[Y]}{\sigma_Y}$$`
+
+標準化された変数の共分散を求めたものが **相関係数** (correlation coefficient)
+
+---
+
+## 相関係数 (2/)
+
+`$$\begin{aligned}
+\mathrm{Cor}(X, Y)
+&amp;=\mathrm{Cov}
+\left(
+\frac{X - \mathbb{E}[X]}{\sigma_X}, 
+\frac{Y - \mathbb{E}[Y]}{\sigma_Y}
+\right)\\
+&amp;=
+\frac{\mathrm{Cov}(X,Y)}{\sigma_X \sigma_Y}\\
+&amp;=
+\rho
+\end{aligned}$$`
+
+--
+
+コーシー・シュワルツの不等式から次の2つのことが分かる。
+
+- `\(-1 \le \rho \le 1\)`
+- 完全な線形関係 `\(X = tY\)`, `\(t\neq0\)`, があるとき，またそのときに限り
+  `\(|\rho| = 1\)`
+
+---
+
+## 相関係数 (3/)
+
+標本に対する相関係数の定義は
+
+`$$\begin{aligned}
+r = \frac{1}{n-1} \sum_{i=1}^n \frac{X_i - \bar{X}}{s_X} \frac{Y_i - \bar{Y}}{s_Y}
+\end{aligned}$$`
+---
+
+## Rによる相関係数の計算
+
+
+```r
+cov(x, y) / sd(x) / sd(y)
+```
+
+```
+## [1] -0.6
+```
+
+あるいは
+
+
+```r
+cor(x, y)
+```
+
+```
+## [1] -0.6
+```
+
+---
+
+## 相関係数に関する注意 (1/)
+
+- `\(X\)`, `\(Y\)` が独立だと `\(X\)`, `\(Y\)` は無相関（相関係数がゼロ）
+  - ただし，無相関だからといって独立とは限らない
+
+
+--
+
+.pull-left[
+
+```r
+x &lt;- -4:4
+y &lt;- x ^ 2
+cor(x, y)
+```
+
+```
+## [1] 0
+```
+
+独立と判断する前に散布図を書く。
+]
+
+--
+
+.pull-right[
+&lt;img src="slides_files/figure-html/quadratic-1.png" height="300" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+## 相関係数に関する注意 (2/)
+
+- 散布図が水平，垂直に並んでいたら相関係数はゼロに近い
+
+
+```r
+x &lt;- runif(100)
+y &lt;- 0.5 + 0.2 * runif(100)
+plot(x, y, pch = 16, main=paste("cor =", cor(x,y)), ylim=c(0,1))
+```
+
+&lt;img src="slides_files/figure-html/scatter-hv-1.png" height="300" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 相関係数に関する注意 (3/)
+
+- 「傾き」と相関係数の大きさは関係がない。あくまでも直線に近いかどうかが大事
+
+
+```r
+y &lt;- 0.05 * x
+plot(x, y, pch = 16, main=paste("cor =", cor(x,y)), ylim=c(0,1))
+```
+
+&lt;img src="slides_files/figure-html/scatter-lin-1.png" height="300" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 相関係数の検定 (1/)
+
+`\(X\)`, `\(Y\)` が独立で同一な正規分布に従うならば, それぞれ `\(n\)`個ずつ抽出した標本 `\(\{X_i\}_{i=1}^n\)`, `\(\{Y_i\}_{i=1}^n\)` から計算できる次の量
+
+`$$t = \frac{r\sqrt{n - 2}}{\sqrt{1 - r^2}}$$`
+
+は自由度 `\(n-2\)` の t 分布に従う。
+
+
+**注意**
+
+正規分布なら「無相関⇒独立」が言える。データの数が大きければ正規分布でなくても上の事実が近似的に成り立つ。
+
+---
+
+## 相関係数の検定 (2/)
+
+例のごとく実験する。
+
+
+```r
+n &lt;- 15
+t &lt;- replicate(1000, {
+    x &lt;- rnorm(n); y &lt;- rnorm(n)
+    cor(x, y) * sqrt(n-2) / sqrt(1 - cor(x, y)^2)
+  })
+hist(t, breaks = 30, freq = FALSE)
+curve(dt(x, df = n - 2), add = TRUE)
+```
+
+
+問題: `rnorm` を別の分布に変えて実験してみよう。
+
+---
+
+## 相関係数の検定 (3/)
+
+&lt;img src="slides_files/figure-html/unnamed-chunk-6-1.png" height="500" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 相関係数の検定 (4/)
+
+
+```r
+n &lt;- 40; a &lt;- rnorm(n); b &lt;- rnorm(n); c &lt;- rnorm(n)
+x &lt;- a + c
+y &lt;- b + c
+cor.test(x, y)
+```
+
+```
+## 
+## 	Pearson's product-moment correlation
+## 
+## data:  x and y
+## t = 2.361, df = 38, p-value = 0.02346
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  0.05194689 0.60209424
+## sample estimates:
+##       cor 
+## 0.3576685
+```
+
+---
+
+## 相関係数の検定 (5/)
+
+
+```r
+(t &lt;- cor(x, y) * sqrt(n-2) / sqrt(1 - cor(x, y)^2))  # t
+```
+
+```
+## [1] 2.361
+```
+
+```r
+2 * pt(-abs(t), df = n - 2)                           # p-value
+```
+
+```
+## [1] 0.02345748
+```
+
+```r
+(ci &lt;- t + qt(c(0.025, 0.975), df = n - 2))      # 95% CI for t
+```
+
+```
+## [1] 0.3366057 4.3853940
+```
+
+```r
+ci / sqrt(n - 2 + ci ^ 2)
+```
+
+```
+## [1] 0.05452343 0.57968274
+```
+
+
+---
+
+## 相関係数の検定 (6/)
+
+参考：n が4以上であれば，CIは Fisher のZ変換というものを使う。
+
+
+```r
+&gt; r &lt;- cor(x, y)
+&gt; tanh(atanh(r) + qnorm(c(0.025, 0.975)) / sqrt(n - 3))
+```
+
+```
+## [1] 0.05194689 0.60209424
+```
+
+- ヘルプ `help(cor.test)` および
+- [Wikipedia: Pearson Correlation Coefficient](https://en.wikipedia.org/wiki/Pearson_correlation_coefficient#Using_the_Fisher_transformation)
+
+---
+
+## 外れ値 (1/)
+
+上で定義した `\(r\)` は **ピアソンの積率相関係数** という。
+
+ピアソンの積率相関係数は **外れ値に弱い** という弱点がある。
+実験してみよう。
+
+
+```r
+&gt; x &lt;- rnorm(50)
+&gt; y1 &lt;- x + 0.5 * runif(50)
+&gt; cor(x, y1)
+```
+
+```
+## [1] 0.9855742
+```
+
+
+```r
+&gt; y2 &lt;- y1; y2[5] &lt;- y1[5] + 15
+&gt; cor(x, y2)
+```
+
+```
+## [1] 0.2267242
+```
+
+---
+
+## 外れ値 (2/)
+
+
+```r
+&gt; plot(x, y2)
+&gt; points(x, y1, pch=4)
+```
+
+&lt;img src="slides_files/figure-html/outlier-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 外れ値に強い相関係数 (1/)
+
+**スピアマンの順位相関係数** `\(\rho=\)` データの順位について積率相関係数を計算する。
+
+
+```r
+&gt; cor(rank(x), rank(y1))
+&gt; cor(rank(x), rank(y2))
+```
+
+`cor()` に `method = "spearman"` を渡してもよい。
+
+
+```r
+&gt; cor(x, y1, method = "spearman")
+```
+
+```
+## [1] 0.9827131
+```
+
+```r
+&gt; cor(x, y2, method = "spearman")
+```
+
+```
+## [1] 0.8884994
+```
+
+---
+
+## 外れ値に強い相関係数 (2/)
+
+**ケンドールの順位相関係数** `\(\tau =\)` ランダムに2組の観測値を選んだとき `\((x_i - x_j)(y_i - y_j) &gt; 0\)` になる確率。
+
+
+```r
+&gt; cor(x, y1, method = "kendall")
+```
+
+```
+## [1] 0.9004082
+```
+
+```r
+&gt; cor(x, y2, method = "kendall")
+```
+
+```
+## [1] 0.8318367
+```
+
+
+---
+
+## 外れ値に強い相関係数 (3/)
+
+
+```r
+## p. 118 の手順
+tau &lt;- function(x, y){
+  S &lt;- 0; mx &lt;- 0; my &lt;- 0
+  for (i in seq(1, length(x) - 1)){
+    for (j in seq(i + 1, length(x))){
+      if (isTRUE(all.equal(x[i], x[j])) || 
+          isTRUE(all.equal(y[i], y[j]))){
+        next()
+      } else {
+        S &lt;- S + sign((x[i] - x[j]) * (y[i] - y[j]))
+        mx &lt;- mx + 1; my &lt;- my + 1
+      }
+    }
+  }
+  S / sqrt(mx * my)
+}
+
+tau(x, y1)
+```
+
+```
+## [1] 0.9004082
+```
+
+
+---
+
+## 外れ値に強い相関係数 (4/)
+
+Pearson　の `\(r\)`
+
+
+```r
+&gt; cor.test(x, y2)
+```
+
+```
+## 
+## 	Pearson's product-moment correlation
+## 
+## data:  x and y2
+## t = 1.6128, df = 48, p-value = 0.1133
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  -0.05510082  0.47508988
+## sample estimates:
+##       cor 
+## 0.2267242
+```
+
+---
+
+## 外れ値に強い相関係数 (5/)
+
+Spearman の `\(\rho\)` (検定の理論は省略)
+
+
+```r
+&gt; cor.test(x, y2, method = "spearman")
+```
+
+```
+## 
+## 	Spearman's rank correlation rho
+## 
+## data:  x and y2
+## S = 2322, p-value &lt; 2.2e-16
+## alternative hypothesis: true rho is not equal to 0
+## sample estimates:
+##       rho 
+## 0.8884994
+```
+
+---
+
+## 外れ値に強い相関係数 (6/)
+
+Kendall の `\(\tau\)` (検定の理論は省略)
+
+
+```r
+&gt; cor.test(x, y2, method = "kendall")
+```
+
+```
+## 
+## 	Kendall's rank correlation tau
+## 
+## data:  x and y2
+## z = 8.5238, p-value &lt; 2.2e-16
+## alternative hypothesis: true tau is not equal to 0
+## sample estimates:
+##       tau 
+## 0.8318367
+```
+
+---
+
+## 日教組組織率と学力の関係 (1/)
+
+§8.2 と §8.5 では，「日教組が強いところは学力が低い」という失言と，新聞社が行った「統計分析」について述べてある。
+
+- 朝日新聞の検証（負の相関はないという説）
+- 産経新聞の検証（負の相関があるという説）
+
+いずれも自説に都合のよいようにデータを加工していて，信頼性できないということが説明してある。当該セクションを一読することをおすすめする。
+
+---
+
+## 日教組組織率と学力の関係 (2/)
+
+
+```r
+&gt; df &lt;- read.csv("https://git.io/fjwcr", fileEncoding = "UTF-8")
+&gt; names(df)
+```
+
+```
+##  [1] "都道府県名"          "小国A率"            
+##  [3] "小国B率"             "小数A率"            
+##  [5] "小数B率"             "中国A率"            
+##  [7] "中国B率"             "中数A率"            
+##  [9] "中数B率"             "総合点"             
+## [11] "H16参院選那谷屋正義" "H16有効投票数"      
+## [13] "H19参院選神本みえ子" "H19有効投票数"      
+## [15] "H19公明党得票率"     "H19民主党得票率"    
+## [17] "H19自民党得票率"     "H19共産党得票率"    
+## [19] "H19社民党得票率"
+```
+
+
+
+```r
+&gt; View(df)
+```
+
+---
+
+## 日教組組織率と学力の関係 (2/)
+
+p. 122 には，有効投票数で割って検定し直せと（行間に）書いているので，やってみる。
+
+
+```r
+df$nikkyoso &lt;- (df$H16参院選那谷屋正義 / df$H16有効投票数 + 
+                       df$H19参院選神本みえ子 / df$H19有効投票数)
+cor.test(df$総合点, df$nikkyoso)
+```
+
+```
+## 
+## 	Pearson's product-moment correlation
+## 
+## data:  df$総合点 and df$nikkyoso
+## t = -0.25537, df = 45, p-value = 0.7996
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  -0.3216928  0.2518782
+## sample estimates:
+##         cor 
+## -0.03804014
+```
+
+
+---
+
+## 日教組組織率と学力の関係 (3/)
+
+
+```r
+cor.test(df$総合点, df$nikkyoso, method = "pearson")
+```
+
+```
+## 
+## 	Pearson's product-moment correlation
+## 
+## data:  df$総合点 and df$nikkyoso
+## t = -0.25537, df = 45, p-value = 0.7996
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  -0.3216928  0.2518782
+## sample estimates:
+##         cor 
+## -0.03804014
+```
+
+相関があるとは言えなさそうである。
+
+---
+
+## 自己相関 (1/)
+
+
+直接関係していない変数同士が第三の変数「交絡因子」を通じて相関してしまうことがある。
+つまり，相関は因果関係を意味しない。
+
+時系列データの相関係数を計算すると，高い相関が出やすい。
+時系列データは共通の「時間」という要因と相関しているから。
+
+---
+
+## 自己相関 (2/)
+
+独立な2つの時系列データ（あるいは一般に自己相関の強い変数）に現れる相関を **疑似相関** (spurious correlation) と呼ぶ。
+
+&lt;img src="image/spurious.png" height="350" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## 自己相関 (3/)
+
+
+```r
+cor(cumsum(rnorm(200)), cumsum(rnorm(200)))
+```
+
+```
+## [1] -0.5582695
+```
+
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day09")
+```
+チュートリアルがはじまるよ。
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
