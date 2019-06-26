@@ -325,8 +325,14 @@ $$\frac{\mathrm{SSB}/(k-1)}{\mathrm{SSW}/(N-k)}
 ## 一元配置分散分析 (6/)
 
 
-```{r vase, echo=FALSE, out.width=500}
+```{r ss, echo=FALSE, out.width=500}
 knitr::include_graphics("images/ss.png")
+```
+
+---
+
+```{r sswb, echo=FALSE, out.width=1000}
+knitr::include_graphics("images/sswb.png")
 ```
 
 ---
