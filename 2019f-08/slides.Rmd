@@ -268,7 +268,7 @@ $$y_{ij} = \mu + \beta_{i} + \varepsilon_{ij}$$
 
 - $i =$ グループのラベル ( $i=1,\dots,k$)
 - $j =$ グループ内の個体のラベル
-- $\mu=$ 全体の平均, $n_i$ はグループの個数， $N$ は総数
+- $\mu=$ 全体の平均, $n_i$ はグループ $i$ の個体数， $N$ は総数
 - $\beta_i=$ グループの平均と全体の平均の乖離 $\sum_i n_i \beta_i = 0$
 - $\varepsilon_{ij}$ は独立同一な正規分布で平均ゼロ
 
@@ -338,7 +338,7 @@ knitr::include_graphics("images/ss.png")
 $$\mu \approx \frac{1}{N} \sum_{i,j} y_{ij} = \bar{y}_{\bullet \bullet}$$
 グループの平均
 
-$$\mu + \beta_i \approx \frac{1}{n_j} \sum_{j=1}^{n_j} y_{ij} = \bar{y}_{i\bullet}$$
+$$\mu + \beta_i \approx \frac{1}{n_i} \sum_{j=1}^{n_i} y_{ij} = \bar{y}_{i\bullet}$$
 
 ---
 
@@ -437,7 +437,7 @@ SSB <- sum((Y - ave(Y)) ^ 2) - SSW
 ## 一元配置分散分析 (12/)
 
 ```{r, prompt=FALSE}
-N <- length(dta)
+N <- length(Y)
 k <- length(levels(grp))
 F <- (SSB / (k - 1)) / (SSW / (N - k))
 F
