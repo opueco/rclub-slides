@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club - Day 10</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Day 10
+## <a href="https://opueco.github.io/rclub-slides/2019f-10/slides.html" class="uri">https://opueco.github.io/rclub-slides/2019f-10/slides.html</a>
+### Kenji Sato
+### 2019/7/10
+
+---
+
+
+
+
+## 先週やったこと
+
+- 相関
+
+---
+
+## 今日やること
+
+- 回帰
+
+奥村 (2016) の第9章は経済系学部・研究科としては少しものたりないので，大きく脱線する。
+
+ただし，「計量経済学」のコースで学ぶ内容ほど厳密には取り扱わないので，数値計算上の演習程度という理解に留めてほしい。
+
+理屈は来週勉強します。今日はたくさん手を動かして線形回帰の手順を手になじませるのが目的
+
+
+---
+
+## お願い
+
+
+```r
+&gt; plot(women)
+```
+
+などのようにプロンプト付きで表示している部分は，かならず自分の手で入力してください。
+
+指先の筋肉がコマンドを覚えてくれます。
+
+---
+
+## 回帰分析の概要 (1/)
+
+- ある変数 `\(Y\)` の水準に関心を持っている
+- `\(Y\)` の水準に大きく関係すると推察される要因 `\(X\)` との関係を知りたい
+
+
+`\(Y\)` は被説明変数（従属変数）  
+`\(X\)` は説明変数（独立変数）
+
+`\(X\)` が 1つの場合は単回帰，2つ以上の場合は重回帰  
+（重回帰の場合でも一番関心のある変数というのがあることも多い。
+その他の変数はコントロール変数という）
+
+---
+
+## 回帰分析の概要 (2/)
+
+欲を言えば，「 `\(X\)` を1だけ増やせれば `\(Y\)` を○○だけ増やせる」ということが分かれば政策的な含意を導けるかもしれない。
+（例：法人税を1%下げれば GDPが X% 上がる）
+
+ただし，実際にはこれは少し難しい。
+回帰分析は因果関係の解析を意図しているのだけど，因果関係の「証明」は簡単ではない。
+
+難しい話は「計量経済学」の授業を聞いてください。
+
+---
+
+## 回帰分析の概要 (3/)
+
+ただし！
+
+「相関関係は因果関係を意味しない」というマントラ（呪い？）に拘泥しても先に進めないので， `\(X\)` が1増えたときに `\(Y\)` はどれだけ増えるか？という「観察」はそれ自体が重要である，という立場に立とう。
+
+
+---
+
+## 回帰分析に使うデータ
+
+| `\(Y\)`      | `\(X_1\)`    | `\(X_2\)`    | `\(\cdots\)` | `\(X_k\)`    |
+|----------|----------|----------|----------|----------|
+| `\(y_{11}\)` | `\(x_{11}\)` | `\(x_{12}\)` | `\(\cdots\)` | `\(x_{1k}\)` |
+| `\(y_{21}\)` | `\(x_{21}\)` | `\(x_{22}\)` | `\(\cdots\)` | `\(x_{2k}\)` |
+| `\(\vdots\)` | `\(\vdots\)` | `\(\vdots\)` |          | `\(\vdots\)` |
+| `\(y_{n1}\)` | `\(x_{n1}\)` | `\(x_{n2}\)` |          | `\(x_{nk}\)` |
+
+
+- 列は1つの変数
+- 行は1つの観測を表す
+
+`\(k\)` が1なら **単回帰**, `\(k\ge 2\)` なら重回帰
+
+
+---
+
+## `women` データを使う (1/)
+
+起動時に呼び込まれる **datasets** パッケージのデータ
+
+
+```r
+&gt; ?women
+```
+
+```
+Description  
+-----------  
+This data set gives the average heights and weights for 
+American women aged 30–39.
+
+Format  
+------  
+A data frame with 15 observations on 2 variables.
+
+[,1]	height	numeric	Height (in)
+[,2]	weight	numeric	Weight (lbs)
+```
+
+---
+
+## `women` データを使う (2/)
+
+.pull-left[
+
+```r
+&gt; women
+```
+
+```
+##    height weight
+## 1      58    115
+## 2      59    117
+## 3      60    120
+## 4      61    123
+## 5      62    126
+## 6      63    129
+## 7      64    132
+## 8      65    135
+## 9      66    139
+## 10     67    142
+## 11     68    146
+## 12     69    150
+## 13     70    154
+## 14     71    159
+## 15     72    164
+```
+]
+
+.pull-right[
+数字を見ていてもよくわからない。
+
+回帰を実行する前には **必ず** 散布図などを書いて可視化する。
+]
+
+---
+
+## `women` データを使う (3/)
+
+
+```r
+&gt; plot(women)
+```
+
+&lt;img src="slides_files/figure-html/women0-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 単回帰の実践 (1/)
+
+2変数間に関係がありそうなので，「回帰」してみる。
+
+
+```r
+&gt; m &lt;- lm(weight ~ height, data = women)
+&gt; m
+```
+
+```
+## 
+## Call:
+## lm(formula = weight ~ height, data = women)
+## 
+## Coefficients:
+## (Intercept)       height  
+##      -87.52         3.45
+```
+
+意味：
+
+`$$\mathbf{weight} = -87.52 + 3.45\ \mathbf{height} + (\mathrm{error})$$`
+
+---
+
+## 単回帰の実践 (2/)
+
+
+```r
+&gt; plot(women)
+&gt; abline(m)
+```
+
+&lt;img src="slides_files/figure-html/women1-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 単回帰の実践 (3/)
+
+先程の式を使えば，「予測」(prediction)に使える。
+
+`$$\widehat{\mathbf{weight}} = -87.52 + 3.45\ \mathbf{height}$$`
+
+身長が 60.8インチの人の体重は？
+
+
+```r
+&gt; new &lt;- data.frame(height = 60.8)
+&gt; new$weight &lt;- predict(m, new)
+&gt; new
+```
+
+```
+##   height   weight
+## 1   60.8 122.2433
+```
+
+
+---
+
+## 誤差はどうなっている？ (1/)
+
+
+```r
+&gt; women2 &lt;- women
+&gt; women2$prediction &lt;- predict(m)
+&gt; women2$residuals &lt;- residuals(m)
+&gt; 
+&gt; head(women2)
+```
+
+```
+##   height weight prediction   residuals
+## 1     58    115   112.5833  2.41666667
+## 2     59    117   116.0333  0.96666667
+## 3     60    120   119.4833  0.51666667
+## 4     61    123   122.9333  0.06666667
+## 5     62    126   126.3833 -0.38333333
+## 6     63    129   129.8333 -0.83333333
+```
+
+`resid(m)` の結果は次のコードの結果と同じ。
+
+
+```r
+&gt; women$weight - predict(m)
+```
+
+---
+
+## 誤差はどうなっている？ (2/)
+
+
+```r
+&gt; plot(women2$resid, pch = 16)
+```
+
+&lt;img src="slides_files/figure-html/resid-1.png" height="300" style="display: block; margin: auto;" /&gt;
+
+ランダムじゃなさそう。予測に使えていない情報がある。  
+この点はまた後ほど戻ってくる。
+
+---
+
+## 誤差はどうなっている？ (3/)
+
+先程の
+
+`$$\widehat{\mathbf{weight}} = -87.52 + 3.45\ \mathbf{height}$$`
+
+は，残差の平方和が最小になるように係数を選んだだけ。
+背後にある確率分布に関係なくこのような数字はでてくる。
+
+必ずデータや誤差の散布図を描いて傾向を確かめる。
+
+
+統計的な情報が知りたいときは `summary()` を使う。
+
+
+```r
+&gt; summary(m)
+```
+
+---
+
+
+```r
+&gt; summary(m)
+```
+
+```
+## 
+## Call:
+## lm(formula = weight ~ height, data = women)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.7333 -1.1333 -0.3833  0.7417  3.1167 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -87.51667    5.93694  -14.74 1.71e-09 ***
+## height        3.45000    0.09114   37.85 1.09e-14 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.525 on 13 degrees of freedom
+## Multiple R-squared:  0.991,	Adjusted R-squared:  0.9903 
+## F-statistic:  1433 on 1 and 13 DF,  p-value: 1.091e-14
+```
+
+---
+
+## 誤差はどうなっている？ (5/)
+
+```
+* ## Residual standard error: 1.525 on 13 degrees of freedom
+```
+
+自由度は データ数マイナス係数の数（定数項も含む）
+
+```
+* ## Multiple R-squared:  0.991,    Adjusted R-squared:  0.9903 
+```
+
+`\(R^2\)` は決定係数と呼ばれる，モデルを評価する指標。1に近いほどあてはまりがよい。
+
+```
+* ## F-statistic:  1433 on 1 and 13 DF,  p-value: 1.091e-14
+```
+
+`\(F\)`値は単回帰のときはあまり意味がない。
+
+
+
+---
+
+## 回帰係数の t検定
+
+`height` が `weight` に与える影響を知りたいので，下の `height` のところを見る。
+係数が0 という帰無仮説の下で， `Estimate/Std.Error` は t分布に従う。（古典的仮定）
+
+`Pr(&gt;|t|)` は p値，帰無仮説が正しい場合に観測した結果よりめずらしいことが起こる確率。
+
+```
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -87.51667    5.93694  -14.74 1.71e-09 ***
+*## height        3.45000    0.09114   37.85 1.09e-14 ***
+```
+
+`\(p &lt; 0.01\)` なので，係数がゼロであるという帰無仮説は棄却  
+height が 1増えると， weight が 3.45 増える
+
+---
+
+## 回帰係数の信頼区間
+
+信頼区間は `confint` で求められる。
+
+
+```r
+&gt; confint(m)
+```
+
+```
+##                   2.5 %     97.5 %
+## (Intercept) -100.342655 -74.690679
+## height         3.253112   3.646888
+```
+
+これは次の計算と同じ。 `outer(a, b) == a %o% b`
+
+
+```r
+&gt; p &lt;- c(0.025, 0.975)
+&gt; coef(m) + sqrt(diag(vcov(m))) %o%  qt(p, df = 13)
+```
+
+```
+##                    [,1]       [,2]
+## (Intercept) -100.342655 -74.690679
+## height         3.253112   3.646888
+```
+
+---
+
+## 「線形」の意味 (1/)
+
+線形回帰モデルは
+
+`$$y = \beta_0 + \beta_1 x_1 + \cdots \beta_k x_k + e$$`
+
+という回帰式を使い，何らかの基準で `\((\beta_0, \beta_1, \dots, \beta_k)\)` を選ぶ。
+
+線形というのは，データの1次式という意味ではなく，未知係数 `\(\beta\)` について線形という意味。つまり， `\(\beta_i^2\)` のような項は入らない。
+
+---
+
+## 「線形」の意味 (2/)
+
+すなち
+
+`$$\mathbf{weight} = \beta_0 + \beta_1\ \mathbf{height} + 
+\beta_2\ \mathbf{height}^2 +  (\mathrm{error})$$`
+
+のようなモデルも線形回帰モデル。
+
+この場合 
+
+
+```r
+weight ~ height + I(height^2)
+```
+
+というフォーミュラを使う。
+
+---
+
+## `model.matrix` (1/)
+
+どういうデータを使っているかは `model.matrix` で分かる。
+
+
+```r
+&gt; r &lt;- lm(weight ~ height + I(height^2), data = women)
+&gt; model.matrix(r)
+```
+
+```
+##    (Intercept) height I(height^2)
+## 1            1     58        3364
+## 2            1     59        3481
+## 3            1     60        3600
+## 4            1     61        3721
+## 5            1     62        3844
+## 6            1     63        3969
+## 7            1     64        4096
+## 8            1     65        4225
+## 9            1     66        4356
+## 10           1     67        4489
+## 11           1     68        4624
+## 12           1     69        4761
+## 13           1     70        4900
+## 14           1     71        5041
+## 15           1     72        5184
+## attr(,"assign")
+## [1] 0 1 2
+```
+
+---
+
+## `model.matrix` (2/)
+
+1からなる列が追加されているのは「定数項」に対応  
+変数 `x` の2次項を入れるには `I(x^2)` を足す。
+
+練習:  
+
+以下のフォーミュラではどうなるか？
+
+```r
+lm(weight ~ height + height^2, data = women)
+lm(weight ~ height^2, data = women)
+lm(weight ~ I(height^2), data = women)
+lm(weight ~ height - 1, data = women)
+```
+
+---
+
+## 2次項の入った線形回帰 (1/)
+
+
+```r
+&gt; women4 &lt;- women
+&gt; women4$predictions &lt;- predict(r)
+&gt; plot(women)
+&gt; points(women$height, women4$predictions, type = "l")
+```
+
+&lt;img src="slides_files/figure-html/second-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 2次項の入った線形回帰 (2/)
+
+
+```r
+&gt; plot(residuals(r))
+```
+
+&lt;img src="slides_files/figure-html/second-resid-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## `pressure` データ (1/)
+
+
+```r
+&gt; ?pressure
+```
+
+```
+Vapor Pressure of Mercury as a Function of Temperature
+
+Format  
+A data frame with 19 observations on 2 variables.
+
+[, 1]	temperature numeric	temperature (deg C)
+[, 2]	pressure    numeric	pressure (mm)
+```
+
+---
+
+## `pressure` データ (2/)
+
+
+```r
+&gt; plot(pressure, pch=16)
+```
+
+&lt;img src="slides_files/figure-html/pressure-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## `pressure` データ (3/)
+
+直線では回帰できない！ → 線形回帰じゃ無理？  
+
+--
+
+
+```r
+&gt; plot(log(pressure$temperature + 273), 
++      log(pressure$pressure), pch = 16)
+```
+
+&lt;img src="slides_files/figure-html/pressure-log-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+---
+
+## `pressure` データ (4/)
+
+対数変換すれば線形回帰も悪くなさそう。
+
+
+```r
+&gt; pressure2 &lt;- pressure
+&gt; pressure2$tempK &lt;- pressure2$temperature + 273
+&gt; mp &lt;- lm(log(pressure) ~ log(tempK), data = pressure2)
+&gt; mp
+```
+
+```
+## 
+## Call:
+## lm(formula = log(pressure) ~ log(tempK), data = pressure2)
+## 
+## Coefficients:
+## (Intercept)   log(tempK)  
+##     -106.05        17.61
+```
+
+---
+
+## `pressure` データ (5/)
+
+
+```r
+&gt; plot(log(pressure2$tempK), log(pressure2$pressure))
+&gt; abline(mp)
+```
+
+&lt;img src="slides_files/figure-html/log-pressure2-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## `pressure` データ (6/)
+
+
+```r
+&gt; plot(residuals(mp), pch = 16)
+```
+
+&lt;img src="slides_files/figure-html/mpresid-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## `pressure` データ (7/)
+
+
+```r
+&gt; summary(mp)
+```
+
+```
+## 
+## Call:
+## lm(formula = log(pressure) ~ log(tempK), data = pressure2)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.2385 -0.3593  0.2141  0.4624  0.6043 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -106.0542     3.1720  -33.44   &lt;2e-16 ***
+## log(tempK)    17.6087     0.5208   33.81   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.5734 on 17 degrees of freedom
+## Multiple R-squared:  0.9853,	Adjusted R-squared:  0.9845 
+## F-statistic:  1143 on 1 and 17 DF,  p-value: &lt; 2.2e-16
+```
+
+---
+
+## `pressure` データ (8/)
+
+さらなるフィットの向上を目指して2次の項を足してみよう。（係数の解釈が難しくなるのでこれは良し悪し）
+
+
+```r
+&gt; mp2 &lt;- lm(log(pressure) ~ log(tempK) + I(log(tempK)^2), 
++           data = pressure2)
+&gt; mp2
+```
+
+```
+## 
+## Call:
+## lm(formula = log(pressure) ~ log(tempK) + I(log(tempK)^2), data = pressure2)
+## 
+## Coefficients:
+##     (Intercept)       log(tempK)  I(log(tempK)^2)  
+##        -445.231          130.000           -9.294
+```
+
+---
+
+## `pressure` データ (9/)
+
+
+```r
+&gt; plot(pressure2$tempK, pressure2$pressure)
+&gt; points(pressure2$tempK, exp(predict(mp2)), type = "l")
+```
+
+&lt;img src="slides_files/figure-html/pressure2-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## `pressure` データ (10/)
+
+`\(T\)` を絶対温度， `\(P\)` を圧力とすると，
+
+`$$\log P = -445 + 130 \log T - 9.29 (\log T)^2$$`
+
+「理想気体」なら `log` の1次式で書けるはずだった。
+ファンデルワールスの状態方程式ともちょっと違う。
+
+
+**回帰式からは「真理」を得られないことに注意する。あくまでもデータをうまく説明できる関数表現を1つ見つけたというだけ!**
+
+---
+
+## 問題
+
+次の各コマンドを実行しなさい。
+
+1. 回帰係数は似ているか？
+1. 回帰係数が似ていることから，データ（`(x1,y1)`, `(x2,y2)`, `(x3,y3)`, `(x4,y4)`）も似ているといえるか？
+
+
+```r
+&gt; m1 &lt;- lm(y1 ~ x1, data = anscombe); coef(m1)
+&gt; m2 &lt;- lm(y2 ~ x2, data = anscombe); coef(m2)
+&gt; m3 &lt;- lm(y3 ~ x3, data = anscombe); coef(m3)
+&gt; m4 &lt;- lm(y4 ~ x4, data = anscombe); coef(m4)
+```
+
+---
+
+### 問題
+
+`cars` データに対して線形回帰分析（単回帰）を実行してください。最低限，次のことを全部やる。
+
+1. 各変数の意味を調べる
+1. 因果関係の方向を見極めて仮説を立てる（A↑⇒B↑）
+1. データの散布図をプロットする。
+   データに傾向性がなければ回帰せずにやめる。あれば次に進む。
+1. `lm` で回帰を実行する
+1. `summary` を係数の優位性， `\(R^2\)` をチェックする
+1. 回帰係数を解釈する（Aが1増えたらBが〇〇増える）
+1. 散布図と回帰直線を同時にプロットして当てはまりを目視
+1. 残差をプロットする。明らかな傾向が残っていたらモデルを変えてやりなおす
+
+
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day10")
+```
+チュートリアルがはじまるよ。
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
