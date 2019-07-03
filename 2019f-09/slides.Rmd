@@ -132,9 +132,9 @@ cov(x, y)
 
 ## 共分散の意味
 
-$X$ が平均より大きいときに $Y$ も平均より大きい, $Y$ が平均より小さいときに $Y$ も平均より小さい傾向があるときには，共分散は正になる。
+$X$ が平均より大きいときに $Y$ も平均より大きい, $X$ が平均より小さいときに $Y$ も平均より小さい傾向があるときには，共分散は正になる。
 
-逆に, $X$ が平均より大きいときに $Y$ も平均より小さくなる傾向があれば 共分散は負になる。
+逆に, $X$ が平均より大きいときに $Y$ は　　平均より小さくなる傾向があれば 共分散は負になる。
 
 
 ---
@@ -389,10 +389,22 @@ cor(x, y1, method = "kendall")
 cor(x, y2, method = "kendall")
 ```
 
-
 ---
 
 ## 外れ値に強い相関係数 (3/)
+
+p.118 の手順
+
+- $S = m_x = m_y =0$ とする。
+- $1 \le i < j \le n$ を満たす $(i,j)$ について 
+  - $(X_i - X_j)(Y_i - Y_j) > 0$ なら $S \leftarrow S + 1$
+  - $(X_i - X_j)(Y_i - Y_j) < 0$ なら $S \leftarrow S - 1$
+  - $X_i \neq X_j$ なら $m_x \leftarrow m_x + 1$
+  - $Y_i \neq Y_j$ なら $m_y \leftarrow m_y + 1$
+
+---
+
+## 外れ値に強い相関係数 (4/)
 
 ```{r, prompt=FALSE}
 ## p. 118 の手順
@@ -400,13 +412,12 @@ tau <- function(x, y){
   S <- 0; mx <- 0; my <- 0
   for (i in seq(1, length(x) - 1)){
     for (j in seq(i + 1, length(x))){
-      if (isTRUE(all.equal(x[i], x[j])) || 
-          isTRUE(all.equal(y[i], y[j]))){
-        next()
-      } else {
-        S <- S + sign((x[i] - x[j]) * (y[i] - y[j]))
-        mx <- mx + 1; my <- my + 1
-      }
+      eq_x <- isTRUE(all.equal(x[i], x[j]))
+      eq_y <- isTRUE(all.equal(y[i], y[j]))
+      if (!eq_x) mx <- mx + 1
+      if (!eq_y) my <- my + 1
+      if (eq_x || eq_y) next() 
+      S <- S + sign((x[i] - x[j]) * (y[i] - y[j]))
     }
   }
   S / sqrt(mx * my)
@@ -418,7 +429,7 @@ tau(x, y1)
 
 ---
 
-## 外れ値に強い相関係数 (4/)
+## 外れ値に強い相関係数 (5/)
 
 Pearson　の $r$
 
@@ -428,7 +439,7 @@ cor.test(x, y2)
 
 ---
 
-## 外れ値に強い相関係数 (5/)
+## 外れ値に強い相関係数 (6/)
 
 Spearman の $\rho$ (検定の理論は省略)
 
@@ -438,7 +449,7 @@ cor.test(x, y2, method = "spearman")
 
 ---
 
-## 外れ値に強い相関係数 (6/)
+## 外れ値に強い相関係数 (7/)
 
 Kendall の $\tau$ (検定の理論は省略)
 
