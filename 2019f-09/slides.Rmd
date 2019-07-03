@@ -401,6 +401,7 @@ p.118 の手順
   - $(X_i - X_j)(Y_i - Y_j) < 0$ なら $S \leftarrow S - 1$
   - $X_i \neq X_j$ なら $m_x \leftarrow m_x + 1$
   - $Y_i \neq Y_j$ なら $m_y \leftarrow m_y + 1$
+- $\tau = S / \sqrt{m_x m_y}$
 
 ---
 
@@ -451,7 +452,7 @@ cor.test(x, y2, method = "spearman")
 
 ## 外れ値に強い相関係数 (7/)
 
-Kendall の $\tau$ (検定の理論は省略)
+Kendall の $\tau$ ([検定の理論は省略](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient#Significance_tests))
 
 ```{r}
 cor.test(x, y2, method = "kendall")
@@ -466,7 +467,7 @@ cor.test(x, y2, method = "kendall")
 - 朝日新聞の検証（負の相関はないという説）
 - 産経新聞の検証（負の相関があるという説）
 
-いずれも自説に都合のよいようにデータを加工していて，信頼性できないということが説明してある。当該セクションを一読することをおすすめする。
+いずれも自説に都合のよいようにデータを加工していて，信用できないということが説明してある。当該セクションを一読することをおすすめする。
 
 ---
 
