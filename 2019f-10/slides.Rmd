@@ -330,7 +330,7 @@ $$y = \beta_0 + \beta_1 x_1 + \cdots \beta_k x_k + e$$
 $$\mathbf{weight} = \beta_0 + \beta_1\ \mathbf{height} + 
 \beta_2\ \mathbf{height}^2 +  (\mathrm{error})$$
 
-のようなモデルも線形回帰モデル。
+のようなモデルも線形回帰モデル。(重回帰分析)
 
 この場合 
 
@@ -534,6 +534,19 @@ m4 <- lm(y4 ~ x4, data = anscombe); coef(m4)
 1. 散布図と回帰直線を同時にプロットして当てはまりを目視
 1. 残差をプロットする。明らかな傾向が残っていたらモデルを変えてやりなおす
 
+
+---
+
+## 分析練習のためのデータ
+
+計量経済学向けのデータ（観察データ）で練習したい場合は以下のパッケージをインストールしておくとよい。
+
+- [**AER**](https://CRAN.R-project.org/package=AER)
+   - Kleiber and Zeileis, Applied Econometrics with R に付属しているデータ
+   - `install.packages("AER")`
+- [**wooldridge**](https://CRAN.R-project.org/package=wooldridge)
+   - Wooldridge, Introductory Econometrics のデータ
+   - `install.packages("wooldridge")`
 
 
 ---
