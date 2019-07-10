@@ -498,7 +498,8 @@ lm(weight ~ height - 1, data = women)
 &gt; women4 &lt;- women
 &gt; women4$predictions &lt;- predict(r)
 &gt; plot(women)
-&gt; points(women$height, women4$predictions, type = "l")
+&gt; points(women4$height, women4$predictions, 
++        type = "b", col = "red")
 ```
 
 &lt;img src="slides_files/figure-html/second-1.png" height="350" style="display: block; margin: auto;" /&gt;
@@ -716,7 +717,7 @@ A data frame with 19 observations on 2 variables.
 1. データの散布図をプロットする。
    データに傾向性がなければ回帰せずにやめる。あれば次に進む。
 1. `lm` で回帰を実行する
-1. `summary` を係数の優位性， `\(R^2\)` をチェックする
+1. `summary` を係数の有意性， `\(R^2\)` をチェックする
 1. 回帰係数を解釈する（Aが1増えたらBが〇〇増える）
 1. 散布図と回帰直線を同時にプロットして当てはまりを目視
 1. 残差をプロットする。明らかな傾向が残っていたらモデルを変えてやりなおす
