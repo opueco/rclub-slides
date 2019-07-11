@@ -32,6 +32,7 @@ options(width = 63)
 
 - 重回帰分析
 - 回帰係数の検定に関する詳細
+- 重み付き線形回帰モデル
 
 ---
 
@@ -540,19 +541,19 @@ ols
 
 ## WLS の計算例 (3/)
 
-```{r}
-sjPlot::tab_model(ols, wls, show.ci = FALSE, show.stat = TRUE, show.p = FALSE)
-```
-
----
-
-## WLS の練習 (3/)
-
 続いて重み付き最小2乗法（WLS）
 
 ```{r}
 wls <- lm(fml, weights = num, data = df)
 wls
+```
+
+---
+
+## WLS の計算結果
+
+```{r}
+sjPlot::tab_model(ols, wls, show.ci = FALSE, show.stat = TRUE, show.p = FALSE)
 ```
 
 ---
