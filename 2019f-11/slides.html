@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club - Day 11</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Day 11
+## <a href="https://opueco.github.io/rclub-slides/2019f-11/slides.html" class="uri">https://opueco.github.io/rclub-slides/2019f-11/slides.html</a>
+### Kenji Sato
+### 2019/7/17
+
+---
+
+
+
+
+## 先週やったこと
+
+- R による回帰分析の基本
+
+---
+
+## 今日やること
+
+- 重回帰分析
+- 回帰係数の検定に関する詳細
+
+---
+
+## 回帰分析に使うデータ
+
+| `\(Y\)`      | `\(X_1\)`    | `\(X_2\)`    | `\(\cdots\)` | `\(X_k\)`    |
+|----------|----------|----------|----------|----------|
+| `\(y_{11}\)` | `\(x_{11}\)` | `\(x_{12}\)` | `\(\cdots\)` | `\(x_{1k}\)` |
+| `\(y_{21}\)` | `\(x_{21}\)` | `\(x_{22}\)` | `\(\cdots\)` | `\(x_{2k}\)` |
+| `\(\vdots\)` | `\(\vdots\)` | `\(\vdots\)` |          | `\(\vdots\)` |
+| `\(y_{n1}\)` | `\(x_{n1}\)` | `\(x_{n2}\)` |          | `\(x_{nk}\)` |
+
+
+- 列は1つの変数
+- 行は1つの観測を表す
+
+`\(k\)` が1なら 単回帰, `\(k\ge 2\)` なら**重回帰**
+
+
+---
+
+## `wooldridge` パッケージ
+
+Wooldridge の教科書のデータを集めたパッケージ
+
+まだインストールされていなければ，インストールする。
+
+
+```r
+&gt; install.package("wooldridge")
+```
+
+---
+
+## 参考: `vignette()` 
+
+パッケージには vignette という使用方法の紹介記事が付属していることが多い。
+
+
+```r
+&gt; vignette(package = "wooldridge")
+```
+
+で一覧表示して，タイトルを入れてもう一度実行する。
+
+
+```r
+vignette("Introductory-Econometrics-Examples", 
+         package = "wooldridge")
+```
+
+
+---
+
+## `data()`
+
+パッケージのデータをロードする関数。
+
+データ名を指定しなければ使えるデータを一覧する。
+
+
+```r
+&gt; data(package = "wooldridge")
+```
+
+例えば `wage1` データをロードするには次のようにする。
+
+
+```r
+&gt; library(wooldridge)
+&gt; data("wage1")
+```
+
+---
+
+## `wooldridge::wage1` データ
+
+データにもドキュメントがついているので，必ず一読しておく。
+
+
+```r
+&gt; ?wage1
+```
+
+`nrow=526`, `ncol=24`
+
+---
+
+## データの抽出
+
+全データではなく，次のデータを使おう
+
+`lwage`: log of the average hourly earnings  
+`educ`: years of education  
+`exper`: years of potential experience  
+`tenutre`: years with current employer
+
+
+
+```r
+&gt; wage &lt;- wage1[c('lwage', 'educ', 'exper', 'tenure')]
+&gt; head(wage)
+```
+
+```
+##      lwage educ exper tenure
+## 1 1.131402   11     2      0
+## 2 1.175573   12    22      2
+## 3 1.098612   11     2      0
+## 4 1.791759    8    44     28
+## 5 1.667707   12     7      2
+## 6 2.169054   16     9      8
+```
+
+---
+
+## データの可視化
+
+
+```r
+&gt; plot(wage)
+```
+
+&lt;img src="slides_files/figure-html/wage-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 記述統計
+
+
+```r
+&gt; install.packages("sjPlot")
+```
+
+
+```r
+&gt; sjmisc::descr(wage)
+```
+
+```
+## 
+## ## Basic descriptive statistics
+## 
+##     var    type  label   n NA.prc  mean    sd   se    md
+##   lwage numeric  lwage 526      0  1.62  0.53 0.02  1.54
+##    educ integer   educ 526      0 12.56  2.77 0.12 12.00
+##   exper integer  exper 526      0 17.02 13.57 0.59 13.50
+##  tenure integer tenure 526      0  5.10  7.22 0.32  2.00
+##  trimmed             range  skew
+##     1.59 3.85 (-0.63-3.22)  0.39
+##    12.69         18 (0-18) -0.62
+##    15.64         50 (1-51)  0.71
+##     3.49         44 (0-44)  2.12
+```
+
+---
+
+#### 重回帰分析 (結果をコピペしておこう)
+
+
+```r
+&gt; model &lt;- lm(lwage ~ educ + exper + tenure, data = wage)
+&gt; summary(model)
+```
+
+```
+## 
+## Call:
+## lm(formula = lwage ~ educ + exper + tenure, data = wage)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -2.05802 -0.29645 -0.03265  0.28788  1.42809 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) 0.284360   0.104190   2.729  0.00656 ** 
+## educ        0.092029   0.007330  12.555  &lt; 2e-16 ***
+## exper       0.004121   0.001723   2.391  0.01714 *  
+## tenure      0.022067   0.003094   7.133 3.29e-12 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.4409 on 522 degrees of freedom
+## Multiple R-squared:  0.316,	Adjusted R-squared:  0.3121 
+## F-statistic: 80.39 on 3 and 522 DF,  p-value: &lt; 2.2e-16
+```
+
+---
+
+## 参考  `sjPlot::tab_model`
+
+きれいな表にしてワードファイルに保存できる。結果を論文・レポートにそのままコピー＆ペーストすればOK。
+
+結果を調節するオプションがたくさんあるので調べること。
+
+
+```r
+sjPlot::tab_model(model, show.se = TRUE, show.stat = TRUE, 
+                  collapse.se = TRUE, file = 'test.doc')
+```
+
+---
+
+class: section
+
+## 回帰係数・検定統計量の計算
+
+---
+
+## 回帰係数の計算 (1/)
+
+線形回帰モデルは最小2乗法で解く。行列の計算だけでできる。どんな行列？
+
+
+```r
+&gt; model.matrix(model)
+```
+
+```
+##     (Intercept) educ exper tenure
+## 1             1   11     2      0
+## 2             1   12    22      2
+## 3             1   11     2      0
+## 4             1    8    44     28
+## 5             1   12     7      2
+## 6             1   16     9      8
+## 7             1   18    15      7
+## 8             1   12     5      3
+## 9             1   12    26      4
+## 10            1   17    22     21
+## 11            1   16     8      2
+## 12            1   13     3      0
+## 13            1   12    15      0
+## 14            1   12    18      3
+## 15            1   12    31     15
+## 16            1   16    14      0
+## 17            1   12    10      0
+## 18            1   13    16     10
+## 19            1   12    13      0
+## 20            1   12    36      6
+## 21            1   12    11      4
+## 22            1   12    29     13
+## 23            1   16     9      9
+## 24            1   12     3      1
+## 25            1   11    37      8
+## 26            1   16     3      3
+## 27            1   16    11     10
+## 28            1   16    31      0
+## 29            1   15    30      0
+## 30            1    8     9      1
+## 31            1   14    23      5
+## 32            1   14     2      5
+## 33            1   13    16     16
+## 34            1   12     7      3
+## 35            1   12     3      0
+## 36            1   16    22      4
+## 37            1   12    15      6
+## 38            1    4    39     15
+## 39            1   14     3      3
+## 40            1   12    11      0
+## 41            1   12     3      0
+## 42            1   12    20      5
+## 43            1   14    16      0
+## 44            1   11    45     12
+## 45            1   13    11      4
+## 46            1   15    20     13
+## 47            1   10     1      0
+## 48            1   12    36      2
+## 49            1   14     9      2
+## 50            1   12    15      1
+## 51            1   12    18      0
+## 52            1   16     3      2
+## 53            1   12    15      5
+## 54            1   12     7      7
+## 55            1   12     2      0
+## 56            1   15     3      0
+## 57            1   16     1      1
+## 58            1    8    13      0
+## 59            1   18     8      8
+## 60            1   16     7      0
+## 61            1   13    40     20
+## 62            1   14    42      5
+## 63            1   10    36      8
+## 64            1   10    13      0
+## 65            1   14     9      3
+## 66            1   14    26     23
+## 67            1   16     7      4
+## 68            1   12    25      3
+## 69            1   16    10      5
+## 70            1   12     3      2
+## 71            1   16     3      0
+## 72            1   17    17      2
+## 73            1   12    17      8
+## 74            1   12    20     34
+## 75            1   12     7      0
+## 76            1   13    24     19
+## 77            1   12    28      0
+## 78            1   12     2      1
+## 79            1   12    19     13
+## 80            1   18    13      0
+## 81            1    9    22      5
+## 82            1   16     3      1
+## 83            1   10     4      0
+## 84            1   12     7      5
+## 85            1   12     6      2
+## 86            1   12    13      3
+## 87            1   12    14      0
+## 88            1   12    14      4
+## 89            1    8    40     24
+## 90            1   12    11      7
+## 91            1   12    14      6
+## 92            1   14    40     39
+## 93            1   12     1      0
+## 94            1   12     2      0
+## 95            1   12     4      1
+## 96            1    9    19      1
+## 97            1   13     1      0
+## 98            1   12    34     22
+## 99            1   14     5      2
+## 100           1   12     3      0
+## 101           1   15     6      6
+## 102           1   12    14      0
+## 103           1   12    35     12
+## 104           1   12     8      4
+## 105           1   14     7      7
+## 106           1   15    11      3
+## 107           1   12    14     11
+## 108           1   12    35     10
+## 109           1   12    46      0
+## 110           1   17     7      0
+## 111           1   11    45     12
+## 112           1   18    29     25
+## 113           1   12     6      3
+## 114           1   14    15      0
+## 115           1   14    33     16
+## 116           1   10    15      0
+## 117           1   14     5      0
+## 118           1   12     7      2
+## 119           1   15     6      1
+## 120           1    8    33     12
+## 121           1   16     2      1
+## 122           1   14     4      0
+## 123           1   15     1      0
+## 124           1   12    29      0
+## 125           1   18    17      3
+## 126           1   16    17      3
+## 127           1   10    36      3
+## 128           1    8    31     30
+## 129           1   10    23      2
+## 130           1   11    13      1
+## 131           1   18     3      3
+## 132           1   15    15      0
+## 133           1   12    48      1
+## 134           1   11     6      0
+## 135           1   12    12      0
+## 136           1   12     5      0
+## 137           1   14    19      5
+## 138           1   16     9      3
+## 139           1    2    39     13
+## 140           1   14    28     11
+## 141           1   16    23     20
+## 142           1   12     2      0
+## 143           1   12    15      1
+## 144           1   13     5      0
+## 145           1   12    18      2
+## 146           1   15     2      2
+## 147           1   10     3      0
+## 148           1   12    31      4
+## 149           1   16    20      5
+## 150           1   13    34     15
+## 151           1    9     5      0
+## 152           1   12    11      0
+## 153           1   13    31      3
+## 154           1   12     8      5
+## 155           1   12     2      2
+## 156           1   14    18      5
+## 157           1   16     3      0
+## 158           1   16     3      2
+## 159           1    9     4      1
+## 160           1   18     4      4
+## 161           1   10     1      0
+## 162           1   10     1      0
+## 163           1   13    28      5
+## 164           1   12    47      4
+## 165           1   18    13      1
+## 166           1   13     2      6
+## 167           1   12    48      2
+## 168           1   13     6      5
+## 169           1   13     8      0
+## 170           1   13    25     21
+## 171           1   18    13      7
+## 172           1   12     8      1
+## 173           1   12    19     10
+## 174           1   13     1      4
+## 175           1   12    43      5
+## 176           1   12    19      9
+## 177           1   12    11      5
+## 178           1   14    43      4
+## 179           1   10    44      3
+## 180           1   12    22     11
+## 181           1   16     3      2
+## 182           1   16     3      2
+## 183           1   12    41     11
+## 184           1   14     5      0
+## 185           1   12    14     11
+## 186           1   12    24     16
+## 187           1   12    28      8
+## 188           1   12    25      8
+## 189           1   12     3      0
+## 190           1   12    11      0
+## 191           1   12     7      6
+## 192           1   16     9      2
+## 193           1   16     5      0
+## 194           1   14     9      3
+## 195           1   11     1      0
+## 196           1   16     2      1
+## 197           1   12    13      0
+## 198           1   12    10      2
+## 199           1   17     5      3
+## 200           1   12    30      8
+## 201           1   12    31     19
+## 202           1   16     1      2
+## 203           1    8     9      0
+## 204           1   12    10      0
+## 205           1   12    38      0
+## 206           1   12    19      6
+## 207           1   16     5      0
+## 208           1   12    26      2
+## 209           1   12    35     12
+## 210           1    9     2      0
+## 211           1   13     1      2
+## 212           1   16    19     10
+## 213           1   14     3      2
+## 214           1    8    36     24
+## 215           1   14    29     24
+## 216           1   13     1      2
+## 217           1   12    38      3
+## 218           1   18     1      2
+## 219           1    9    29      0
+## 220           1    8    36     15
+## 221           1    8     4      0
+## 222           1   12    45      4
+## 223           1   14    22      3
+## 224           1   12    20      4
+## 225           1   16     5      0
+## 226           1    8    15      2
+## 227           1   13    10      2
+## 228           1    9     3      0
+## 229           1   16    16      7
+## 230           1   12    38      1
+## 231           1   15    33     26
+## 232           1   11     2      0
+## 233           1   14     6      5
+## 234           1   12    19      3
+## 235           1   12    29      0
+## 236           1   12     2      0
+## 237           1   18     3      1
+## 238           1   12     4      0
+## 239           1   12    10      1
+## 240           1   12     4      0
+## 241           1   12    14     10
+## 242           1   12    15      5
+## 243           1   12    19      0
+## 244           1   14    17      0
+## 245           1   16    29      7
+## 246           1   12     2      0
+## 247           1   14     5      0
+## 248           1   11    38      3
+## 249           1   12     3      0
+## 250           1   10    47      0
+##  [ reached getOption("max.print") -- omitted 276 rows ]
+## attr(,"assign")
+## [1] 0 1 2 3
+```
+
+---
+
+## 回帰係数の計算 (2/)
+
+`\(Y =\)` 非説明変数のベクトル  
+`\(X =\)` 説明変数と定数（1）からなる行列
+
+線形モデル
+
+`$$Y = X\beta + e$$`
+
+誤差項ベクトル `\(e\)` の2乗和を最小化する。
+
+`$$\| e\|^2 = \sum_{i=1}^n e_i^2 \to \min$$`
+
+---
+
+## 回帰係数の計算 (3/)
+
+`$$\begin{aligned}
+\|e\|^2 
+  &amp;= \|Y - X\beta\|^2 \\
+  &amp;= (Y - X\beta)^\top (Y - X\beta)\\
+  &amp;= Y^\top Y - Y^\top X\beta - \beta^\top X^\top Y + \beta^T X^\top X\beta\\
+  &amp;= Y^\top Y - 2 \beta^\top X^\top Y + \beta^\top X^\top X \beta\\
+\end{aligned}$$`
+
+これを `\(\beta\)` で微分する（ `\(\beta_0,\beta_1, \dots \beta_k\)` のそれぞれで偏微分して並べたベクトルを考えるということ→ [補足資料](https://opur.club/files/notes/ols.pdf)）
+
+`$$\frac{\partial \|e\|^2}{\partial \beta} = -2X^\top Y + 2X^\top X \beta = 0$$`
+
+`$$\Longrightarrow \beta = (X^\top X)^{-1} X^\top Y$$`
+
+---
+
+## 回帰係数の計算 (4/)
+
+確かめてみよう。
+
+行列の掛け算は `A %*% B`  
+行列の転置は `t(A)`  
+逆行列 `\(A^{-1}B\)` は `solve(A, B)`
+
+
+```r
+&gt; X &lt;- model.matrix(model)
+&gt; Y &lt;- wage$lwage
+&gt; # beta &lt;- 計算せよ！
+```
+
+結果はこんな感じ。`summary(model)` と比較せよ
+
+
+```
+##                    [,1]
+## (Intercept) 0.284359541
+## educ        0.092028988
+## exper       0.004121109
+## tenure      0.022067218
+```
+
+
+---
+
+## t検定 (1/)
+
+係数の計算は簡単，でも係数の t検定（つまり係数が有意にゼロでないことの検定）は少しむずかしい。
+
+- 古典的仮定（誤差項が分散が同じ正規分布）のもとでは比較的分かりやすい。
+  ガウス・マルコフの定理
+- 等分散性を仮定できないときには, Heteroskedasticity consistent 
+  standard error というのを計算する。経済学ではこっちが標準？
+  （これにもHC0 とか HC3 とか色々）
+
+とりあえず，古典的仮定のもとで計算する。  
+不均一分散の原因が既知なら重み付き最小2乗法もGOOD
+
+---
+
+## t検定 (2/)
+
+残差平方和
+
+`$$RSS =\|\hat e\|^2 = \|X\hat \beta - Y\|^2$$`
+
+
+```r
+&gt; (RSS &lt;- sum((X %*% beta - Y) ^ 2))
+```
+
+```
+## [1] 101.4556
+```
+
+残差標準誤差. `\(k\)` は説明変数の数, 1 を引いてるのは定数項
+
+`$$RSE = \sqrt{RSS / (n - k - 1)}$$`
+
+
+```r
+&gt; (RSE &lt;- sqrt(RSS / (nrow(X) - ncol(X))))
+```
+
+```
+## [1] 0.440862
+```
+
+---
+
+## t検定 (3/)
+
+`\(\hat \beta\)` の分散共分散行列 `\(V_\beta\)`
+
+`$$V_\beta = RSE^2 \times (X^\top X)^{-1}$$`
+
+```r
+&gt; Vbeta &lt;- RSE^2 * solve(t(X) %*% X)
+```
+
+対角成分の平方根が SE 
+
+
+```r
+&gt; (SE &lt;- sqrt(diag(Vbeta)))
+```
+
+```
+## (Intercept)        educ       exper      tenure 
+## 0.104190379 0.007329923 0.001723277 0.003093649
+```
+
+---
+
+## t検定 (4/)
+
+
+```r
+&gt; stat &lt;- data.frame(coef = beta, se = SE)
+&gt; stat
+```
+
+```
+##                    coef          se
+## (Intercept) 0.284359541 0.104190379
+## educ        0.092028988 0.007329923
+## exper       0.004121109 0.001723277
+## tenure      0.022067218 0.003093649
+```
+
+`coef / se` が t分布に従うことが知られている。
+
+
+```r
+&gt; stat$t &lt;- stat$coef / stat$se
+&gt; stat
+```
+
+```
+##                    coef          se         t
+## (Intercept) 0.284359541 0.104190379  2.729230
+## educ        0.092028988 0.007329923 12.555246
+## exper       0.004121109 0.001723277  2.391437
+## tenure      0.022067218 0.003093649  7.133070
+```
+
+---
+
+## t値の計算 (5/)
+
+自由度は（データの数 - 説明変数 - 1） なので，p値は
+
+
+```r
+&gt; stat$p &lt;- 2 * pt(-abs(stat$t), df = nrow(X) - ncol(X))
+&gt; stat
+```
+
+```
+##                    coef          se         t            p
+## (Intercept) 0.284359541 0.104190379  2.729230 6.562466e-03
+## educ        0.092028988 0.007329923 12.555246 8.824197e-32
+## exper       0.004121109 0.001723277  2.391437 1.713562e-02
+## tenure      0.022067218 0.003093649  7.133070 3.294407e-12
+```
+
+---
+
+## 当てはまりの評価指標の計算 (1/)
+
+基本は 2 つのモデルを比べること。
+
+- 線形回帰モデル:  
+  `\(Y = X\beta + u\)` `\(\longrightarrow\)` 残差 `\(\hat e\)`
+- 定数項のみのモデル:  
+  `\(Y = \tilde\beta_0 + \tilde{u}\)` `\(\longrightarrow\)` 残差 `\(\tilde{e}\)`
+
+前者のモデルは後者のモデルを含むので，必ず `\(\|\hat e\|^2 \leq \| \tilde e\|^2\)`
+
+`\(Y=X\beta+u\)` がよいモデルであれば，
+
+`$$\|\hat e\|^2 \ll \| \tilde e\|^2$$`
+
+
+
+---
+
+## 当てはまりの評価指標の計算 (2/)
+
+`\(R^2\)` は `\(Y\)` のばらつきのうち，どの程度が `\(X\beta\)` で説明できているかを示す指標。1に近いほどモデルの当てはまりがよい。
+
+`$$R^2 = 1 - \frac{\| \hat e\|^2}{\| \tilde e\|^2} = 1 - \frac{\|Y - \hat Y\|^2}{\|Y - \bar{Y}\|^2}
+= 1 - \frac{RSS}{\sum (Y_i - \bar Y)^2}$$`
+
+
+```r
+&gt; R2 &lt;- '計算してみよう!'
+```
+
+
+
+
+```r
+&gt; R2
+```
+
+```
+## [1] 0.3160133
+```
+
+
+---
+
+## 当てはまりの評価指標の計算 (2/)
+
+`\(R^2\)` は説明変数を増やせば 1 に近づく。説明変数の数(k)
+を増やすことにペナルティを付けた指標が adjusted `\(R^2\)`, `\(\bar{R}^2\)`
+
+`$$\bar{R}^2 = 1 - \frac{\| \hat e\|^2 / (n - k - 1)}{\|\tilde e \|^2 / (n - 1)}
+= 1 - \frac{RSS / (n-k-1)}{s_Y^2}$$`
+
+
+```r
+&gt; R2b &lt;- 1 - RSS / var(Y) / (nrow(X) - ncol(X)) 
+&gt; R2b
+```
+
+```
+## [1] 0.3120824
+```
+
+**問題**:  なぜ上の計算でうまくいくかを説明してください。
+
+
+---
+
+## F検定 (1/)
+
+再掲: あてはまりの分析の基本は 2 つのモデルを比べること。
+
+- 線形回帰モデル:  
+  `\(Y = X\beta + u\)` `\(\longrightarrow\)` 残差 `\(\hat e\)`
+- 定数項のみのモデル:  
+  `\(Y = \tilde\beta_0 + \tilde{u}\)` `\(\longrightarrow\)` 残差 `\(\tilde{e}\)`
+
+
+`\(\|\hat e\|^2\)`, `\(\|\tilde e\|^2\)` が（近似的にでも）カイ2乗分布に従うことを使って検定ができる。
+
+
+---
+
+## F検定 (2/)
+
+これは1元配置分散分析と同じ問題！
+
+`$$F = \frac{(\|\tilde{e}\|^2 - \|\hat e\|^2) / k}{\|\hat e\|^2 / (n - k - 1)}$$`
+
+`\(\|\hat e\|^2 = RSS\)`, `\(\|\tilde{e}\|^2 = (n-1)s_Y^2\)`
+
+`$$F = \frac{ ((n-1) s_Y^2 - RSS)/ k}{RSS / (n-k-1)}$$`
+
+
+```r
+&gt; n &lt;- nrow(X); k &lt;- ncol(X) - 1
+&gt; F &lt;- (n-k-1) * ((n-1) * var(Y) - RSS) / RSS / k
+&gt; F ## p値は各自で計算してください
+```
+
+```
+## [1] 80.39092
+```
+
+
+---
+
+## 予測
+
+次の2人の対数所得を, 2通りの方法で予測してみよう。
+
+
+```r
+newdata &lt;- data.frame(
+  educ = c(15, 10),
+  exper = c(30, 15),
+  tenure = c(20, 5)
+)
+newdata
+```
+
+```
+##   educ exper tenure
+## 1   15    30     20
+## 2   10    15      5
+```
+
+1. 自力で計算した `\(\beta\)` を使う方法 (data.frame を matrix にするには `as.matrix()` を使う)
+2. `predict` を使う方法
+
+
+---
+
+## 追加課題
+
+1. 上の説明では `model.matrix()` を使って `X` を作ったが， `model.matrix()` を
+   使わずに `X` を作るにはどうすればよいか？
+1. 説明変数を増やしたり減らしたりして `\(R^2\)`, `\(\bar{R}^2\)`, p値の変化を見てみよう。
+1. `wooldridge` パッケージの他のデータを使って, 重回帰分析を実施してください。
+   - `lm()` を使わずに回帰係数，検定統計量を計算したあとに，`lm()` を使って
+     答え合わせをしてください。
+1. Heteroskedasticity consistent な検定をするためのパッケージを調べて使って
+   みよう。（例：`sandwich`）
+
+---
+
+## 使用例
+
+
+```r
+&gt; library(sandwich)
+&gt; library(lmtest)
+&gt; coeftest(model, vcov = vcovHC(model, "HC1")) 
+```
+
+```
+## 
+## t test of coefficients:
+## 
+##              Estimate Std. Error t value  Pr(&gt;|t|)    
+## (Intercept) 0.2843595  0.1117069  2.5456   0.01120 *  
+## educ        0.0920290  0.0079212 11.6181 &lt; 2.2e-16 ***
+## exper       0.0041211  0.0017459  2.3605   0.01862 *  
+## tenure      0.0220672  0.0037820  5.8348 9.461e-09 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+`sjPlot::tab_model()` で Word にも出力できるはずだけど, いまは [うまく動かない](https://github.com/strengejacke/sjPlot/issues/515) ようです。修復を待ちましょう。
+
+---
+
+class: section
+
+## 重み付き最小二乗法
+
+---
+
+## 不均一分散の源泉 
+
+誤差項の分散に傾向がある場合がいくつかある。
+
+- Y = 消費と X = 所得 とすれば，X が増えるに連れて，Y の分散は大きくなる。
+  所得が多いほど消費と貯蓄の選択に自由度が増えるから。
+- Y = ある都道府県の1人あたり年間パン消費量, X = その都道府県の平均所得額。
+  平均値は標本数が増えると分散が減少するという性質があるので，標本が少ない
+  都道府県ほど分散が大きい。
+  
+分散を均一にするための重みを掛けると推定精度を向上できる。
+
+---
+
+## 比例的不均一分散の解消
+
+`\(X_i\)` を `\(X\)` の `\(i\)` 行目とする。
+
+`$$Y_i = X_i \beta + u_i, \quad \mathbb{E}[u_i^2 | X] = h_i \sigma^2$$`
+
+分散にかかる係数 `\(h_i\)` が分散の不均一性を表している。
+
+`$$\frac{1}{\sqrt{h_i}} Y_i = \frac{1}{\sqrt{h_i}} X_i \beta + \frac{1}{\sqrt{h_i}} u_i$$`
+
+`\(\tilde Y_i = \frac{1}{\sqrt{h_i}} Y_i\)`, `\(\tilde X_i = \frac{1}{\sqrt{h_i}} X_i\)` とおくと，
+
+`$$\tilde Y_i = \tilde X_i \beta + \tilde u_i, \quad \mathbb{E}[\tilde u_i^2 | X] = \sigma^2$$`
+
+分散均一になりました。
+
+---
+
+## 計算の詳細
+
+`$$\begin{aligned}
+\min_\beta \sum_{i=1}^n |\tilde u_i|^2 
+&amp;= \sum_{i=1}^{n}\left|\frac{1}{\sqrt{h_{i}}}u_{i}\right|^{2}\\
+&amp;= \sum_{i=1}^{n} h_{i}^{-1} |Y_i - X_i \beta|^2\\
+&amp;= \sum_{i=1}^{n} w_{i} |Y_i - X_i \beta|^2
+\end{aligned}$$`
+
+
+`lm()` の `weights` オプションに `\(w_i = h_i^{-1}\)` のデータを渡せば，重み付き最小二乗法を実行できる。
+
+---
+
+## WLS の計算例 (1/)
+
+鹿野 (2015, §11.4) の例: 全国消費実態調査
+
+グループ内の平均を取ったデータなので，各グループの観察数を `\(n_i\)` とすれば，分散は `\(\sigma^2 / n_i\)` になる。したがって， `\(w_i = n_i\)`
+
+
+```r
+df &lt;- read.csv("https://git.io/fjPuD", fileEncoding = "UTF-8")
+head(df)
+```
+
+```
+##   gr num    cons consfood consother  income kids  age home
+## 1  1 166 26.7033   4.8056   21.8977 39.0344    0 26.9 19.2
+## 2  2 514 28.3308   5.6988   22.6320 41.7909    0 34.1 36.6
+## 3  3 366 32.0919   6.3623   25.7296 47.1414    0 44.7 70.1
+## 4  4 997 34.7990   6.6880   28.1110 46.3678    0 55.5 86.9
+## 5  5 128 24.9882   4.3730   20.6152 32.2631    1 26.8 25.1
+## 6  6 595 28.6105   5.7604   22.8501 40.8888    1 34.9 52.2
+##   work
+## 1    1
+## 2    1
+## 3    1
+## 4    1
+## 5    1
+## 6    1
+```
+
+---
+
+## WLS の計算例 (2/)
+
+比較のために普通の最小二乗法
+
+
+```r
+&gt; fml &lt;- cons ~ income + kids + age + home + work
+&gt; ols &lt;- lm(fml, data = df)
+&gt; ols
+```
+
+```
+## 
+## Call:
+## lm(formula = fml, data = df)
+## 
+## Coefficients:
+## (Intercept)       income         kids          age  
+##     -9.3327       0.5694       2.2214       0.6678  
+##        home         work  
+##     -0.1873      -1.0174
+```
+
+---
+
+## WLS の計算例 (3/)
+
+
+```r
+&gt; sjPlot::tab_model(ols, wls, show.ci = FALSE, show.stat = TRUE, show.p = FALSE)
+```
+
+&lt;table style="border-collapse:collapse; border:none;"&gt;
+&lt;tr&gt;
+&lt;th style="border-top: double; text-align:center; font-style:normal; font-weight:bold; padding:0.2cm;  text-align:left; "&gt;&amp;nbsp;&lt;/th&gt;
+&lt;th colspan="2" style="border-top: double; text-align:center; font-style:normal; font-weight:bold; padding:0.2cm; "&gt;cons&lt;/th&gt;
+&lt;th colspan="2" style="border-top: double; text-align:center; font-style:normal; font-weight:bold; padding:0.2cm; "&gt;cons&lt;/th&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=" text-align:center; border-bottom:1px solid; font-style:italic; font-weight:normal;  text-align:left; "&gt;Predictors&lt;/td&gt;
+&lt;td style=" text-align:center; border-bottom:1px solid; font-style:italic; font-weight:normal;  "&gt;Estimates&lt;/td&gt;
+&lt;td style=" text-align:center; border-bottom:1px solid; font-style:italic; font-weight:normal;  "&gt;Statistic&lt;/td&gt;
+&lt;td style=" text-align:center; border-bottom:1px solid; font-style:italic; font-weight:normal;  "&gt;Estimates&lt;/td&gt;
+&lt;td style=" text-align:center; border-bottom:1px solid; font-style:italic; font-weight:normal;  "&gt;Statistic&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; "&gt;(Intercept)&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;-9.33&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;-3.05&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;-8.39&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;-4.18&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; "&gt;income&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;0.57&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;4.27&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;0.50&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;5.77&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; "&gt;kids&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;2.22&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;6.48&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;2.79&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;7.42&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; "&gt;age&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;0.67&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;6.17&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;0.72&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;7.86&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; "&gt;home&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;-0.19&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;-4.40&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;-0.22&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;-6.02&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; "&gt;work&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;-1.02&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;-0.86&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;0.17&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  "&gt;0.19&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; padding-top:0.1cm; padding-bottom:0.1cm; border-top:1px solid;"&gt;Observations&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left; border-top:1px solid;" colspan="2"&gt;32&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left; border-top:1px solid;" colspan="2"&gt;32&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; padding-top:0.1cm; padding-bottom:0.1cm;"&gt;R&lt;sup&gt;2&lt;/sup&gt; / adjusted R&lt;sup&gt;2&lt;/sup&gt;&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left;" colspan="2"&gt;0.936 / 0.923&lt;/td&gt;
+&lt;td style=" padding:0.2cm; text-align:left; vertical-align:top; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left;" colspan="2"&gt;0.958 / 0.950&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;/table&gt;
+
+---
+
+## WLS の練習 (3/)
+
+続いて重み付き最小2乗法（WLS）
+
+
+```r
+&gt; wls &lt;- lm(fml, weights = num, data = df)
+&gt; wls
+```
+
+```
+## 
+## Call:
+## lm(formula = fml, data = df, weights = num)
+## 
+## Coefficients:
+## (Intercept)       income         kids          age  
+##     -8.3937       0.5031       2.7886       0.7233  
+##        home         work  
+##     -0.2211       0.1670
+```
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day11")
+```
+チュートリアルがはじまるよ。
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

@@ -1,0 +1,566 @@
+---
+title: R Club - Day 11
+subtitle: "https://opueco.github.io/rclub-slides/2019f-11/slides.html"
+author: Kenji Sato
+date: 2019/7/17
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: ["../asset/remark-css/style.css"]
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+header-includes: ['<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">', '<link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">']
+---
+
+```{r setup, include=FALSE}
+set.seed(100)
+knitr::opts_chunk$set(fig.align = "center", prompt = TRUE, dpi = 196,
+                      out.height = 400)
+options(width = 63)
+```
+
+## 先週やったこと
+
+- R による回帰分析の基本
+
+---
+
+## 今日やること
+
+- 重回帰分析
+- 回帰係数の検定に関する詳細
+
+---
+
+## 回帰分析に使うデータ
+
+| $Y$      | $X_1$    | $X_2$    | $\cdots$ | $X_k$    |
+|----------|----------|----------|----------|----------|
+| $y_{11}$ | $x_{11}$ | $x_{12}$ | $\cdots$ | $x_{1k}$ |
+| $y_{21}$ | $x_{21}$ | $x_{22}$ | $\cdots$ | $x_{2k}$ |
+| $\vdots$ | $\vdots$ | $\vdots$ |          | $\vdots$ |
+| $y_{n1}$ | $x_{n1}$ | $x_{n2}$ |          | $x_{nk}$ |
+
+
+- 列は1つの変数
+- 行は1つの観測を表す
+
+$k$ が1なら 単回帰, $k\ge 2$ なら**重回帰**
+
+
+---
+
+## `wooldridge` パッケージ
+
+Wooldridge の教科書のデータを集めたパッケージ
+
+まだインストールされていなければ，インストールする。
+
+```{r, eval=FALSE}
+install.package("wooldridge")
+```
+
+---
+
+## 参考: `vignette()` 
+
+パッケージには vignette という使用方法の紹介記事が付属していることが多い。
+
+```{r, eval=FALSE}
+vignette(package = "wooldridge")
+```
+
+で一覧表示して，タイトルを入れてもう一度実行する。
+
+```{r, eval=FALSE, prompt=FALSE}
+vignette("Introductory-Econometrics-Examples", 
+         package = "wooldridge")
+```
+
+
+---
+
+## `data()`
+
+パッケージのデータをロードする関数。
+
+データ名を指定しなければ使えるデータを一覧する。
+
+```{r, eval=FALSE}
+data(package = "wooldridge")
+```
+
+例えば `wage1` データをロードするには次のようにする。
+
+```{r}
+library(wooldridge)
+data("wage1")
+```
+
+---
+
+## `wooldridge::wage1` データ
+
+データにもドキュメントがついているので，必ず一読しておく。
+
+```{r, eval=FALSE}
+?wage1
+```
+
+`nrow=526`, `ncol=24`
+
+---
+
+## データの抽出
+
+全データではなく，次のデータを使おう
+
+`lwage`: log of the average hourly earnings  
+`educ`: years of education  
+`exper`: years of potential experience  
+`tenutre`: years with current employer
+
+
+```{r}
+wage <- wage1[c('lwage', 'educ', 'exper', 'tenure')]
+head(wage)
+```
+
+---
+
+## データの可視化
+
+```{r wage}
+plot(wage)
+```
+
+---
+
+## 記述統計
+
+```{r, eval=FALSE}
+install.packages("sjPlot")
+```
+
+```{r}
+sjmisc::descr(wage)
+```
+
+---
+
+#### 重回帰分析 (結果をコピペしておこう)
+
+```{r}
+model <- lm(lwage ~ educ + exper + tenure, data = wage)
+summary(model)
+```
+
+---
+
+## 参考  `sjPlot::tab_model`
+
+きれいな表にしてワードファイルに保存できる。結果を論文・レポートにそのままコピー＆ペーストすればOK。
+
+結果を調節するオプションがたくさんあるので調べること。
+
+```{r, eval=FALSE, prompt=FALSE}
+sjPlot::tab_model(model, show.se = TRUE, show.stat = TRUE, 
+                  collapse.se = TRUE, file = 'test.doc')
+```
+
+---
+
+class: section
+
+## 回帰係数・検定統計量の計算
+
+---
+
+## 回帰係数の計算 (1/)
+
+線形回帰モデルは最小2乗法で解く。行列の計算だけでできる。どんな行列？
+
+```{r}
+model.matrix(model)
+```
+
+---
+
+## 回帰係数の計算 (2/)
+
+$Y =$ 非説明変数のベクトル  
+$X =$ 説明変数と定数（1）からなる行列
+
+線形モデル
+
+$$Y = X\beta + e$$
+
+誤差項ベクトル $e$ の2乗和を最小化する。
+
+$$\| e\|^2 = \sum_{i=1}^n e_i^2 \to \min$$
+
+---
+
+## 回帰係数の計算 (3/)
+
+$$\begin{aligned}
+\|e\|^2 
+  &= \|Y - X\beta\|^2 \\
+  &= (Y - X\beta)^\top (Y - X\beta)\\
+  &= Y^\top Y - Y^\top X\beta - \beta^\top X^\top Y + \beta^T X^\top X\beta\\
+  &= Y^\top Y - 2 \beta^\top X^\top Y + \beta^\top X^\top X \beta\\
+\end{aligned}$$
+
+これを $\beta$ で微分する（ $\beta_0,\beta_1, \dots \beta_k$ のそれぞれで偏微分して並べたベクトルを考えるということ→ [補足資料](https://opur.club/files/notes/ols.pdf)）
+
+$$\frac{\partial \|e\|^2}{\partial \beta} = -2X^\top Y + 2X^\top X \beta = 0$$
+
+$$\Longrightarrow \beta = (X^\top X)^{-1} X^\top Y$$
+
+---
+
+## 回帰係数の計算 (4/)
+
+確かめてみよう。
+
+行列の掛け算は `A %*% B`  
+行列の転置は `t(A)`  
+逆行列 $A^{-1}B$ は `solve(A, B)`
+
+```{r}
+X <- model.matrix(model)
+Y <- wage$lwage
+# beta <- 計算せよ！
+```
+
+結果はこんな感じ。`summary(model)` と比較せよ
+
+```{r, echo=FALSE}
+(beta <- solve(t(X) %*% X, t(X) %*% Y))
+```
+
+
+---
+
+## t検定 (1/)
+
+係数の計算は簡単，でも係数の t検定（つまり係数が有意にゼロでないことの検定）は少しむずかしい。
+
+- 古典的仮定（誤差項が分散が同じ正規分布）のもとでは比較的分かりやすい。
+  ガウス・マルコフの定理
+- 等分散性を仮定できないときには, Heteroskedasticity consistent 
+  standard error というのを計算する。経済学ではこっちが標準？
+  （これにもHC0 とか HC3 とか色々）
+
+とりあえず，古典的仮定のもとで計算する。  
+不均一分散の原因が既知なら重み付き最小2乗法もGOOD
+
+---
+
+## t検定 (2/)
+
+残差平方和
+
+$$RSS =\|\hat e\|^2 = \|X\hat \beta - Y\|^2$$
+
+```{r}
+(RSS <- sum((X %*% beta - Y) ^ 2))
+```
+
+残差標準誤差. $k$ は説明変数の数, 1 を引いてるのは定数項
+
+$$RSE = \sqrt{RSS / (n - k - 1)}$$
+
+```{r}
+(RSE <- sqrt(RSS / (nrow(X) - ncol(X))))
+```
+
+---
+
+## t検定 (3/)
+
+$\hat \beta$ の分散共分散行列 $V_\beta$
+
+$$V_\beta = RSE^2 \times (X^\top X)^{-1}$$
+```{r}
+Vbeta <- RSE^2 * solve(t(X) %*% X)
+```
+
+対角成分の平方根が SE 
+
+```{r}
+(SE <- sqrt(diag(Vbeta)))
+```
+
+---
+
+## t検定 (4/)
+
+```{r}
+stat <- data.frame(coef = beta, se = SE)
+stat
+```
+
+`coef / se` が t分布に従うことが知られている。
+
+```{r}
+stat$t <- stat$coef / stat$se
+stat
+```
+
+---
+
+## t値の計算 (5/)
+
+自由度は（データの数 - 説明変数 - 1） なので，p値は
+
+```{r}
+stat$p <- 2 * pt(-abs(stat$t), df = nrow(X) - ncol(X))
+stat
+```
+
+---
+
+## 当てはまりの評価指標の計算 (1/)
+
+基本は 2 つのモデルを比べること。
+
+- 線形回帰モデル:  
+  $Y = X\beta + u$ $\longrightarrow$ 残差 $\hat e$
+- 定数項のみのモデル:  
+  $Y = \tilde\beta_0 + \tilde{u}$ $\longrightarrow$ 残差 $\tilde{e}$
+
+前者のモデルは後者のモデルを含むので，必ず $\|\hat e\|^2 \leq \| \tilde e\|^2$
+
+$Y=X\beta+u$ がよいモデルであれば，
+
+$$\|\hat e\|^2 \ll \| \tilde e\|^2$$
+
+
+
+---
+
+## 当てはまりの評価指標の計算 (2/)
+
+$R^2$ は $Y$ のばらつきのうち，どの程度が $X\beta$ で説明できているかを示す指標。1に近いほどモデルの当てはまりがよい。
+
+$$R^2 = 1 - \frac{\| \hat e\|^2}{\| \tilde e\|^2} = 1 - \frac{\|Y - \hat Y\|^2}{\|Y - \bar{Y}\|^2}
+= 1 - \frac{RSS}{\sum (Y_i - \bar Y)^2}$$
+
+```{r}
+R2 <- '計算してみよう!'
+```
+
+```{r, echo=FALSE}
+R2 <- 1 - RSS / sum((Y - mean(Y))^2)
+```
+
+```{r}
+R2
+```
+
+
+---
+
+## 当てはまりの評価指標の計算 (2/)
+
+$R^2$ は説明変数を増やせば 1 に近づく。説明変数の数(k)
+を増やすことにペナルティを付けた指標が adjusted $R^2$, $\bar{R}^2$
+
+$$\bar{R}^2 = 1 - \frac{\| \hat e\|^2 / (n - k - 1)}{\|\tilde e \|^2 / (n - 1)}
+= 1 - \frac{RSS / (n-k-1)}{s_Y^2}$$
+
+```{r}
+R2b <- 1 - RSS / var(Y) / (nrow(X) - ncol(X)) 
+R2b
+```
+
+**問題**:  なぜ上の計算でうまくいくかを説明してください。
+
+
+---
+
+## F検定 (1/)
+
+再掲: あてはまりの分析の基本は 2 つのモデルを比べること。
+
+- 線形回帰モデル:  
+  $Y = X\beta + u$ $\longrightarrow$ 残差 $\hat e$
+- 定数項のみのモデル:  
+  $Y = \tilde\beta_0 + \tilde{u}$ $\longrightarrow$ 残差 $\tilde{e}$
+
+
+$\|\hat e\|^2$, $\|\tilde e\|^2$ が（近似的にでも）カイ2乗分布に従うことを使って検定ができる。
+
+
+---
+
+## F検定 (2/)
+
+これは1元配置分散分析と同じ問題！
+
+$$F = \frac{(\|\tilde{e}\|^2 - \|\hat e\|^2) / k}{\|\hat e\|^2 / (n - k - 1)}$$
+
+$\|\hat e\|^2 = RSS$, $\|\tilde{e}\|^2 = (n-1)s_Y^2$
+
+$$F = \frac{ ((n-1) s_Y^2 - RSS)/ k}{RSS / (n-k-1)}$$
+
+```{r}
+n <- nrow(X); k <- ncol(X) - 1
+F <- (n-k-1) * ((n-1) * var(Y) - RSS) / RSS / k
+F ## p値は各自で計算してください
+```
+
+
+---
+
+## 予測
+
+次の2人の対数所得を, 2通りの方法で予測してみよう。
+
+```{r, prompt=FALSE}
+newdata <- data.frame(
+  educ = c(15, 10),
+  exper = c(30, 15),
+  tenure = c(20, 5)
+)
+newdata
+```
+
+1. 自力で計算した $\beta$ を使う方法 (data.frame を matrix にするには `as.matrix()` を使う)
+2. `predict` を使う方法
+
+
+---
+
+## 追加課題
+
+1. 上の説明では `model.matrix()` を使って `X` を作ったが， `model.matrix()` を
+   使わずに `X` を作るにはどうすればよいか？
+1. 説明変数を増やしたり減らしたりして $R^2$, $\bar{R}^2$, p値の変化を見てみよう。
+1. `wooldridge` パッケージの他のデータを使って, 重回帰分析を実施してください。
+   - `lm()` を使わずに回帰係数，検定統計量を計算したあとに，`lm()` を使って
+     答え合わせをしてください。
+1. Heteroskedasticity consistent な検定をするためのパッケージを調べて使って
+   みよう。（例：`sandwich`）
+
+---
+
+## 使用例
+
+```{r}
+library(sandwich)
+library(lmtest)
+coeftest(model, vcov = vcovHC(model, "HC1")) 
+```
+
+`sjPlot::tab_model()` で Word にも出力できるはずだけど, いまは [うまく動かない](https://github.com/strengejacke/sjPlot/issues/515) ようです。修復を待ちましょう。
+
+---
+
+class: section
+
+## 重み付き最小二乗法
+
+---
+
+## 不均一分散の源泉 
+
+誤差項の分散に傾向がある場合がいくつかある。
+
+- Y = 消費と X = 所得 とすれば，X が増えるに連れて，Y の分散は大きくなる。
+  所得が多いほど消費と貯蓄の選択に自由度が増えるから。
+- Y = ある都道府県の1人あたり年間パン消費量, X = その都道府県の平均所得額。
+  平均値は標本数が増えると分散が減少するという性質があるので，標本が少ない
+  都道府県ほど分散が大きい。
+  
+分散を均一にするための重みを掛けると推定精度を向上できる。
+
+---
+
+## 比例的不均一分散の解消
+
+$X_i$ を $X$ の $i$ 行目とする。
+
+$$Y_i = X_i \beta + u_i, \quad \mathbb{E}[u_i^2 | X] = h_i \sigma^2$$
+
+分散にかかる係数 $h_i$ が分散の不均一性を表している。
+
+$$\frac{1}{\sqrt{h_i}} Y_i = \frac{1}{\sqrt{h_i}} X_i \beta + \frac{1}{\sqrt{h_i}} u_i$$
+
+$\tilde Y_i = \frac{1}{\sqrt{h_i}} Y_i$, $\tilde X_i = \frac{1}{\sqrt{h_i}} X_i$ とおくと，
+
+$$\tilde Y_i = \tilde X_i \beta + \tilde u_i, \quad \mathbb{E}[\tilde u_i^2 | X] = \sigma^2$$
+
+分散均一になりました。
+
+---
+
+## 計算の詳細
+
+$$\begin{aligned}
+\min_\beta \sum_{i=1}^n |\tilde u_i|^2 
+&= \sum_{i=1}^{n}\left|\frac{1}{\sqrt{h_{i}}}u_{i}\right|^{2}\\
+&= \sum_{i=1}^{n} h_{i}^{-1} |Y_i - X_i \beta|^2\\
+&= \sum_{i=1}^{n} w_{i} |Y_i - X_i \beta|^2
+\end{aligned}$$
+
+
+`lm()` の `weights` オプションに $w_i = h_i^{-1}$ のデータを渡せば，重み付き最小二乗法を実行できる。
+
+---
+
+## WLS の計算例 (1/)
+
+鹿野 (2015, §11.4) の例: 全国消費実態調査
+
+グループ内の平均を取ったデータなので，各グループの観察数を $n_i$ とすれば，分散は $\sigma^2 / n_i$ になる。したがって， $w_i = n_i$
+
+```{r, prompt=FALSE}
+df <- read.csv("https://git.io/fjPuD", fileEncoding = "UTF-8")
+head(df)
+```
+
+---
+
+## WLS の計算例 (2/)
+
+比較のために普通の最小二乗法
+
+```{r}
+fml <- cons ~ income + kids + age + home + work
+ols <- lm(fml, data = df)
+ols
+```
+
+---
+
+## WLS の計算例 (3/)
+
+```{r}
+sjPlot::tab_model(ols, wls, show.ci = FALSE, show.stat = TRUE, show.p = FALSE)
+```
+
+---
+
+## WLS の練習 (3/)
+
+続いて重み付き最小2乗法（WLS）
+
+```{r}
+wls <- lm(fml, weights = num, data = df)
+wls
+```
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day11")
+```
+チュートリアルがはじまるよ。
