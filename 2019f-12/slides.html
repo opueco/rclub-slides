@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club - Day 12</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Day 12
+## <a href="https://opueco.github.io/rclub-slides/2019f-12/slides.html" class="uri">https://opueco.github.io/rclub-slides/2019f-12/slides.html</a>
+### Kenji Sato
+### 2019/7/24
+
+---
+
+
+
+
+## 先週やったこと
+
+- 重回帰分析
+- 回帰係数の検定に関する詳細
+- 重み付き線形回帰モデル
+
+---
+
+## 今日やること
+
+- 最尤法
+- ロジスティック回帰
+
+---
+
+class: section
+
+## 最尤法
+
+---
+
+## 尤度（ゆうど）
+
+コインを10回投げて表が出る回数の確率変数を `\(X\)` とする。表が出る確率を `\(\theta\)` とすれば, `\(X\)` の確率分布は
+
+`$${}_{10}C_X \theta^X (1-\theta)^{1-X}$$`
+
+実際にコイン投げをして `\(X = 4\)` であることを観測した。この事象が起こる確率は
+
+`$$L(\theta) = {}_{10}C_4 \theta^4 (1-\theta)^{10-4}$$`
+
+`\(L(\theta)\)` を尤度という。これは，特定の分布，パラメータを想定したときに，データが観測される確率である。
+
+---
+
+## 最尤法（さいゆうほう）(1/)
+
+`\(\theta\)` を選ぶ方法として，
+
+`$$\max L(\theta)$$`
+
+となる `\(\theta\)` を選ぶのが最尤法 (Maximum Likelihood, ML)
+
+`\(L(\theta)\)` を最大化するかわりに対数尤度 `\(\log L(\theta)\)` を最大化する方が計算が簡単になる場合が多い。
+
+
+---
+
+## 最尤法 (2/)
+
+上の例では
+
+`$$\log L(\theta) = \log {}_{10}C_4 + 4 \log \theta + 6 \log (1-\theta)$$`
+
+なので，
+
+`$$\max_\theta \log L(\theta)
+\Longrightarrow
+\frac{4}{\theta} - \frac{6}{1-\theta}=0$$`
+
+これを `\(\theta\)` について解くと
+
+`$$\theta = 0.4$$`
+
+
+---
+
+class: section
+
+## ロジスティック回帰
+
+---
+
+## 問題設定
+
+線形回帰モデルは，被説明変数の値が連続的だった。
+
+ロジスティック回帰モデルは「2値判別」のために使う。
+
+- 例
+  - 「試験の合否」を模擬試験・内申書などで予測する
+  - 「病気の有無」を性別・年齢・血圧などで予測する
+  - 「女性の就業状態」を夫の収入，年齢，教育年数，子供の数で予測する
+
+---
+
+## 基本的な考え方 (1/)
+
+観測対象 `\(i=1,\dots,n\)` について 
+
+- 被説明変数 `\(y_i = 0\)` or `\(1\)` (便宜的に 0-1 とする) と 
+- 説明変数 `\((x_{i1},\dots, x_{ik})\)`
+
+を持っている。説明変数のベクトルを
+
+`$$x_i = \begin{bmatrix}
+  1 &amp; x_{i1} &amp; \cdots &amp; x_{ik}
+\end{bmatrix}$$`
+
+
+---
+
+## 基本的な考え方 (2/)
+
+係数ベクトル
+
+`$$\beta
+=\begin{bmatrix}
+  \beta_0 \\ \beta_{1} \\ \vdots \\ \beta_{k}
+\end{bmatrix}$$`
+
+をうまく選んで，
+
+`$$x_i \beta$$`
+
+に関する情報から `\(y_i\)` をできるだけうまく言い当てたい。
+
+
+---
+
+## 基本的な考え方 (3/)
+
+0-1 の値を直接推定するのではなく，
+
+`$$p_i = \mathrm{Prob}(y_i = 1)$$`
+
+と考えて, `\(x_i \beta\)` と `\(p_i\)` を関連付ける方法を探せばよい。そこで，
+
+`$$x_i\beta \text{ が大きい} \Longleftrightarrow p_i \text{ が1に近い}$$`
+`$$x_i\beta \text{ が小さい} \Longleftrightarrow p_i \text{ が0に近い}$$`
+
+---
+
+## `\(x_i \beta\)` と `\(p_i\)` の関連付け (1/)
+
+性質
+
+`$$F' (x) \geq 0$$`
+
+`$$\lim_{x \to +\infty} F(x) = 1$$`
+`$$\lim_{x \to -\infty} F(x) = 0$$`
+
+を持つ関数 `\(F\)` を使って
+
+`$$p_i = F(x_i \beta)$$`
+
+とすればよい。 `\(F\)` のような関数を**リンク関数**という
+
+---
+
+## `\(x_i \beta\)` と `\(p_i\)` の関連付け (2/)
+
+リンク関数 `\(F\)` として標準正規分布の累積分布関数 `\(\Phi\)` を用いるモデルを**プロビット・モデル**という。
+
+`$$\Phi(x) = (2\pi)^{-1/2} \int_{-\infty}^x \exp (-z^2 / 2)dz$$`
+
+
+
+```r
+&gt; plot(pnorm, xlim = c(-8, 8))
+```
+
+&lt;img src="slides_files/figure-html/probit-1.png" height="220" style="display: block; margin: auto;" /&gt;
+
+---
+
+## `\(x_i \beta\)` と `\(p_i\)` の関連付け (3/)
+
+`\(F\)` としてロジスティック分布の分布関数を用いるモデルを **ロジット・モデル** （**ロジスティック回帰モデル**）という。
+
+`$$\mathrm{logit}^{-1}(x) = \frac{e^x}{1 + e^x}$$`
+
+
+
+```r
+&gt; curve(exp(x) / (1 + exp(x)), xlim = c(-8, 8))
+```
+
+&lt;img src="slides_files/figure-html/logit-1.png" height="220" style="display: block; margin: auto;" /&gt;
+
+---
+
+## `\(x_i \beta\)` と `\(p_i\)` の関連付け (4/)
+
+ロジット
+
+`$$p = \frac{e^x}{1 + e^x}$$`
+
+を `\(x\)` について解くと, 対数オッズが現れる。
+
+`$$x = \log \left(\frac{p}{1 - p}\right)$$`
+
+これを使うと, `\(\beta\)` の線形関数として対数オッズを表現できる。
+
+`$$x_i \beta = \log \left(\frac{p}{1 - p}\right)$$`
+
+
+---
+
+## 最尤推定 (1/)
+
+`\(y_i\)` のそれぞれは `\(p_i = F(x_i\beta)\)` のベルヌーイ分布であるから，対数尤度関数は
+
+`$$\begin{aligned}
+\log L(\beta; y) 
+&amp;= \sum_{i=1}^n \left[
+  y_i \log p_i + (1 - y_i) \log (1 - p_i) 
+\right]\\
+&amp;= \sum_{i=1}^n \left[
+  y_i \log F(x_i\beta) + (1 - y_i) \log (1 - F(x_i\beta)) 
+\right]
+\end{aligned}$$`
+
+---
+
+## 最尤推定 (2/)
+
+`$$\begin{aligned}
+\frac{\partial}{\partial \beta} \log L(\beta; y) 
+&amp;= \sum_{i=1}^n \left[
+  \frac{y_i}{F(x_i\beta)} - \frac{1 - y_i}{1 - F(x_i\beta)} 
+\right] F'(x_i\beta) x_i^\top
+\end{aligned}$$`
+
+これがゼロになる `\(\beta\)` を数値計算で探せばよい。
+
+
+R では `glm()` で実行できる。
+
+---
+
+## 例: `wooldridge::mroz` (1/)
+
+
+```r
+&gt; library(wooldridge)
+&gt; data(mroz)
+&gt; 
+&gt; fml &lt;- (inlf ~ nwifeinc + educ + exper 
++                + I(exper^2) + age + kidslt6 + kidsge6)
+&gt; ml &lt;- glm(fml, data = mroz, family = binomial(link = "logit"))
+&gt; ml
+```
+
+```
+## 
+## Call:  glm(formula = fml, family = binomial(link = "logit"), data = mroz)
+## 
+## Coefficients:
+## (Intercept)     nwifeinc         educ        exper  
+##    0.425452    -0.021345     0.221170     0.205870  
+##  I(exper^2)          age      kidslt6      kidsge6  
+##   -0.003154    -0.088024    -1.443354     0.060112  
+## 
+## Degrees of Freedom: 752 Total (i.e. Null);  745 Residual
+## Null Deviance:	    1030 
+## Residual Deviance: 803.5 	AIC: 819.5
+```
+
+
+---
+
+
+```r
+&gt; summary(m)
+```
+
+```
+## 
+## Call:
+## glm(formula = fml, family = binomial(link = "logit"), data = mroz)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -2.1770  -0.9063   0.4473   0.8561   2.4032  
+## 
+## Coefficients:
+##              Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)  0.425452   0.860365   0.495  0.62095    
+## nwifeinc    -0.021345   0.008421  -2.535  0.01126 *  
+## educ         0.221170   0.043439   5.091 3.55e-07 ***
+## exper        0.205870   0.032057   6.422 1.34e-10 ***
+## I(exper^2)  -0.003154   0.001016  -3.104  0.00191 ** 
+## age         -0.088024   0.014573  -6.040 1.54e-09 ***
+## kidslt6     -1.443354   0.203583  -7.090 1.34e-12 ***
+## kidsge6      0.060112   0.074789   0.804  0.42154    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1029.75  on 752  degrees of freedom
+## Residual deviance:  803.53  on 745  degrees of freedom
+## AIC: 819.53
+## 
+## Number of Fisher Scoring iterations: 4
+```
+
+---
+
+## 例: `wooldridge::mroz` (2/)
+
+
+```r
+&gt; mp &lt;- glm(fml, data = mroz, family = binomial(link = "probit"))
+&gt; mp
+```
+
+```
+## 
+## Call:  glm(formula = fml, family = binomial(link = "probit"), data = mroz)
+## 
+## Coefficients:
+## (Intercept)     nwifeinc         educ        exper  
+##    0.270074    -0.012024     0.130904     0.123347  
+##  I(exper^2)          age      kidslt6      kidsge6  
+##   -0.001887    -0.052852    -0.868325     0.036006  
+## 
+## Degrees of Freedom: 752 Total (i.e. Null);  745 Residual
+## Null Deviance:	    1030 
+## Residual Deviance: 802.6 	AIC: 818.6
+```
+
+---
+
+
+```r
+&gt; summary(mp)
+```
+
+```
+## 
+## Call:
+## glm(formula = fml, family = binomial(link = "probit"), data = mroz)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -2.2156  -0.9151   0.4315   0.8653   2.4553  
+## 
+## Coefficients:
+##               Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)  0.2700736  0.5080782   0.532  0.59503    
+## nwifeinc    -0.0120236  0.0049392  -2.434  0.01492 *  
+## educ         0.1309040  0.0253987   5.154 2.55e-07 ***
+## exper        0.1233472  0.0187587   6.575 4.85e-11 ***
+## I(exper^2)  -0.0018871  0.0005999  -3.145  0.00166 ** 
+## age         -0.0528524  0.0084624  -6.246 4.22e-10 ***
+## kidslt6     -0.8683247  0.1183773  -7.335 2.21e-13 ***
+## kidsge6      0.0360056  0.0440303   0.818  0.41350    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1029.7  on 752  degrees of freedom
+## Residual deviance:  802.6  on 745  degrees of freedom
+## AIC: 818.6
+## 
+## Number of Fisher Scoring iterations: 4
+```
+
+---
+
+## 予測の精度 (1/)
+
+`fitted()` を使えばよい。`predict()` で `\(x_i\beta\)` を計算，これに `\(F\)` を適用した
+`\(F(x_i\beta)\)` は `fitted()` で計算される。
+
+
+ロジット
+
+
+```r
+&gt; invlogit &lt;- function(x) exp(x) / (1 + exp(x))
+&gt; sum((invlogit(predict(ml)) - fitted(ml)) ^ 2)
+```
+
+```
+## [1] 0
+```
+
+プロビット
+
+
+```r
+&gt; sum((pnorm(predict(mp)) - fitted(mp))^2)
+```
+
+```
+## [1] 0
+```
+
+---
+
+## 予測の精度 (2/)
+
+
+
+```r
+&gt; tbl &lt;- table(fitted(ml) &gt;= 0.5, mroz$inlf)
+&gt; tbl
+```
+
+```
+##        
+##           0   1
+##   FALSE 207  81
+##   TRUE  118 347
+```
+
+
+```r
+&gt; sum(diag(tbl)) / sum(tbl)
+```
+
+```
+## [1] 0.7357238
+```
+
+
+---
+
+## 可視化
+
+
+```r
+&gt; plot(fitted(ml), mroz$inlf)
+```
+
+&lt;img src="slides_files/figure-html/plot-logit-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## 可視化: ROC曲線 (1/)
+
+
+```r
+&gt; source("https://git.io/fjP7v")   # ROC.R
+&gt; ROC(fitted(ml), mroz$inlf)
+```
+
+&lt;img src="slides_files/figure-html/roc1-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+```
+## AUC = 0.8014378 th = 0.5623703 
+## BER = 0.2595291 OR = 8.199634 
+##          Actual
+## Predicted   0   1
+##     FALSE 233 101
+##     TRUE   92 327
+```
+
+---
+
+## 可視化: ROC曲線 (2/)
+
+- `\(\alpha\)` は `\(p \ge \alpha\)` のとき `\(y = 1\)` と判断する閾値 
+- `\(\alpha\)` を 0から1まで動かして偽陽性率と真陽性率の組み合わせをプロットしたもの。
+
+
+```r
+&gt; tbl   # α = 0.5 のとき
+```
+
+```
+##        
+##           0   1
+##   FALSE 207  81
+##   TRUE  118 347
+```
+
+
+```r
+&gt; tbl[2, ] / colSums(tbl)
+```
+
+```
+##         0         1 
+## 0.3630769 0.8107477
+```
+
+
+---
+
+## 可視化: ROC曲線 (3/)
+
+AUC = Area Under Curve は性能の指標の1つ
+
+
+```r
+&gt; ROC(fitted(ml), mroz$inlf)
+```
+
+&lt;img src="slides_files/figure-html/roc2-1.png" height="200" style="display: block; margin: auto;" /&gt;
+
+```
+## AUC = 0.8014378 th = 0.5623703 
+## BER = 0.2595291 OR = 8.199634 
+##          Actual
+## Predicted   0   1
+##     FALSE 233 101
+##     TRUE   92 327
+```
+
+---
+
+## AIC (1/)
+
+モデルに含める変数をどのように定めるかについて「情報量基準」と呼ばれる概念がいくつか提唱されている。
+
+赤池情報量基準 (AIC) 
+
+`$$\begin{aligned}
+\mathrm{AIC}
+= - \log L(\beta; y) + 2(k + 1)
+\end{aligned}$$`
+
+を最小にする変数の組み合わせを選ぶ，というのが1つの基準である。
+
+
+```r
+&gt; y &lt;- mroz$inlf; ftd &lt;- fitted(ml)
+&gt; AIC &lt;- - 2 * sum(y * log(ftd) 
++                  + (1 - y) * log(1 - ftd)) + 2 * 8
+&gt; AIC
+```
+
+```
+## [1] 819.5303
+```
+
+---
+
+## AIC (2/)
+
+`step()` を使うと，AIC を減少させる変数の組み合わせを教えてくれる。
+
+
+```r
+&gt; ml2 &lt;- step(ml)
+&gt; ml3 &lt;- step(ml2)
+```
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day12")
+```
+チュートリアルがはじまるよ。
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

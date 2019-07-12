@@ -14,6 +14,7 @@ Slides for OPU RClub
 - [Day 09](2019f-09/slides.html)
 - [Day 10](2019f-10/slides.html)
 - [Day 11](2019f-11/slides.html)
+- [Day 12](2019f-12/slides.html)
 
 ## 2018 後期
 

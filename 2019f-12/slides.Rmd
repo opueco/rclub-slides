@@ -1,0 +1,406 @@
+---
+title: R Club - Day 12
+subtitle: "https://opueco.github.io/rclub-slides/2019f-12/slides.html"
+author: Kenji Sato
+date: 2019/7/24
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: ["../asset/remark-css/style.css"]
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+header-includes: ['<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">', '<link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">']
+---
+
+```{r setup, include=FALSE}
+set.seed(100)
+knitr::opts_chunk$set(fig.align = "center", prompt = TRUE, dpi = 196,
+                      out.height = 400)
+options(width = 63)
+par(mar = c(2.5, 2.5, 0.5, 1.5))
+```
+
+## 先週やったこと
+
+- 重回帰分析
+- 回帰係数の検定に関する詳細
+- 重み付き線形回帰モデル
+
+---
+
+## 今日やること
+
+- 最尤法
+- ロジスティック回帰
+
+---
+
+class: section
+
+## 最尤法
+
+---
+
+## 尤度（ゆうど）
+
+コインを10回投げて表が出る回数の確率変数を $X$ とする。表が出る確率を $\theta$ とすれば, $X$ の確率分布は
+
+$${}_{10}C_X \theta^X (1-\theta)^{1-X}$$
+
+実際にコイン投げをして $X = 4$ であることを観測した。この事象が起こる確率は
+
+$$L(\theta) = {}_{10}C_4 \theta^4 (1-\theta)^{10-4}$$
+
+$L(\theta)$ を尤度という。これは，特定の分布，パラメータを想定したときに，データが観測される確率である。
+
+---
+
+## 最尤法（さいゆうほう）(1/)
+
+$\theta$ を選ぶ方法として，
+
+$$\max L(\theta)$$
+
+となる $\theta$ を選ぶのが最尤法 (Maximum Likelihood, ML)
+
+$L(\theta)$ を最大化するかわりに対数尤度 $\log L(\theta)$ を最大化する方が計算が簡単になる場合が多い。
+
+
+---
+
+## 最尤法 (2/)
+
+上の例では
+
+$$\log L(\theta) = \log {}_{10}C_4 + 4 \log \theta + 6 \log (1-\theta)$$
+
+なので，
+
+$$\max_\theta \log L(\theta)
+\Longrightarrow
+\frac{4}{\theta} - \frac{6}{1-\theta}=0$$
+
+これを $\theta$ について解くと
+
+$$\theta = 0.4$$
+
+
+---
+
+class: section
+
+## ロジスティック回帰
+
+---
+
+## 問題設定
+
+線形回帰モデルは，被説明変数の値が連続的だった。
+
+ロジスティック回帰モデルは「2値判別」のために使う。
+
+- 例
+  - 「試験の合否」を模擬試験・内申書などで予測する
+  - 「病気の有無」を性別・年齢・血圧などで予測する
+  - 「女性の就業状態」を夫の収入，年齢，教育年数，子供の数で予測する
+
+---
+
+## 基本的な考え方 (1/)
+
+観測対象 $i=1,\dots,n$ について 
+
+- 被説明変数 $y_i = 0$ or $1$ (便宜的に 0-1 とする) と 
+- 説明変数 $(x_{i1},\dots, x_{ik})$
+
+を持っている。説明変数のベクトルを
+
+$$x_i = \begin{bmatrix}
+  1 & x_{i1} & \cdots & x_{ik}
+\end{bmatrix}$$
+
+
+---
+
+## 基本的な考え方 (2/)
+
+係数ベクトル
+
+$$\beta
+=\begin{bmatrix}
+  \beta_0 \\ \beta_{1} \\ \vdots \\ \beta_{k}
+\end{bmatrix}$$
+
+をうまく選んで，
+
+$$x_i \beta$$
+
+に関する情報から $y_i$ をできるだけうまく言い当てたい。
+
+
+---
+
+## 基本的な考え方 (3/)
+
+0-1 の値を直接推定するのではなく，
+
+$$p_i = \mathrm{Prob}(y_i = 1)$$
+
+と考えて, $x_i \beta$ と $p_i$ を関連付ける方法を探せばよい。そこで，
+
+$$x_i\beta \text{ が大きい} \Longleftrightarrow p_i \text{ が1に近い}$$
+$$x_i\beta \text{ が小さい} \Longleftrightarrow p_i \text{ が0に近い}$$
+
+---
+
+## $x_i \beta$ と $p_i$ の関連付け (1/)
+
+性質
+
+$$F' (x) \geq 0$$
+
+$$\lim_{x \to +\infty} F(x) = 1$$
+$$\lim_{x \to -\infty} F(x) = 0$$
+
+を持つ関数 $F$ を使って
+
+$$p_i = F(x_i \beta)$$
+
+とすればよい。 $F$ のような関数を**リンク関数**という
+
+---
+
+## $x_i \beta$ と $p_i$ の関連付け (2/)
+
+リンク関数 $F$ として標準正規分布の累積分布関数 $\Phi$ を用いるモデルを**プロビット・モデル**という。
+
+$$\Phi(x) = (2\pi)^{-1/2} \int_{-\infty}^x \exp (-z^2 / 2)dz$$
+
+
+```{r, probit, out.height=220}
+plot(pnorm, xlim = c(-8, 8))
+```
+
+---
+
+## $x_i \beta$ と $p_i$ の関連付け (3/)
+
+$F$ としてロジスティック分布の分布関数を用いるモデルを **ロジット・モデル** （**ロジスティック回帰モデル**）という。
+
+$$\mathrm{logit}^{-1}(x) = \frac{e^x}{1 + e^x}$$
+
+
+```{r, logit, out.height=220}
+curve(exp(x) / (1 + exp(x)), xlim = c(-8, 8))
+```
+
+---
+
+## $x_i \beta$ と $p_i$ の関連付け (4/)
+
+ロジット
+
+$$p = \frac{e^x}{1 + e^x}$$
+
+を $x$ について解くと, 対数オッズが現れる。
+
+$$x = \log \left(\frac{p}{1 - p}\right)$$
+
+これを使うと, $\beta$ の線形関数として対数オッズを表現できる。
+
+$$x_i \beta = \log \left(\frac{p}{1 - p}\right)$$
+
+
+---
+
+## 最尤推定 (1/)
+
+$y_i$ のそれぞれは $p_i = F(x_i\beta)$ のベルヌーイ分布であるから，対数尤度関数は
+
+$$\begin{aligned}
+\log L(\beta; y) 
+&= \sum_{i=1}^n \left[
+  y_i \log p_i + (1 - y_i) \log (1 - p_i) 
+\right]\\
+&= \sum_{i=1}^n \left[
+  y_i \log F(x_i\beta) + (1 - y_i) \log (1 - F(x_i\beta)) 
+\right]
+\end{aligned}$$
+
+---
+
+## 最尤推定 (2/)
+
+$$\begin{aligned}
+\frac{\partial}{\partial \beta} \log L(\beta; y) 
+&= \sum_{i=1}^n \left[
+  \frac{y_i}{F(x_i\beta)} - \frac{1 - y_i}{1 - F(x_i\beta)} 
+\right] F'(x_i\beta) x_i^\top
+\end{aligned}$$
+
+これがゼロになる $\beta$ を数値計算で探せばよい。
+
+
+R では `glm()` で実行できる。
+
+---
+
+## 例: `wooldridge::mroz` (1/)
+
+```{r}
+library(wooldridge)
+data(mroz)
+
+fml <- (inlf ~ nwifeinc + educ + exper 
+               + I(exper^2) + age + kidslt6 + kidsge6)
+ml <- glm(fml, data = mroz, family = binomial(link = "logit"))
+ml
+```
+
+
+---
+
+```{r}
+summary(m)
+```
+
+---
+
+## 例: `wooldridge::mroz` (2/)
+
+```{r}
+mp <- glm(fml, data = mroz, family = binomial(link = "probit"))
+mp
+```
+
+---
+
+```{r}
+summary(mp)
+```
+
+---
+
+## 予測の精度 (1/)
+
+`fitted()` を使えばよい。`predict()` で $x_i\beta$ を計算，これに $F$ を適用した
+$F(x_i\beta)$ は `fitted()` で計算される。
+
+
+ロジット
+
+```{r}
+invlogit <- function(x) exp(x) / (1 + exp(x))
+sum((invlogit(predict(ml)) - fitted(ml)) ^ 2)
+```
+
+プロビット
+
+```{r}
+sum((pnorm(predict(mp)) - fitted(mp))^2)
+```
+
+---
+
+## 予測の精度 (2/)
+
+
+```{r}
+tbl <- table(fitted(ml) >= 0.5, mroz$inlf)
+tbl
+```
+
+```{r}
+sum(diag(tbl)) / sum(tbl)
+```
+
+
+---
+
+## 可視化
+
+```{r plot-logit, fig.asp=0.5}
+plot(fitted(ml), mroz$inlf)
+```
+
+
+---
+
+## 可視化: ROC曲線 (1/)
+
+```{r roc1}
+source("https://git.io/fjP7v")   # ROC.R
+ROC(fitted(ml), mroz$inlf)
+```
+
+---
+
+## 可視化: ROC曲線 (2/)
+
+- $\alpha$ は $p \ge \alpha$ のとき $y = 1$ と判断する閾値 
+- $\alpha$ を 0から1まで動かして偽陽性率と真陽性率の組み合わせをプロットしたもの。
+
+```{r}
+tbl   # α = 0.5 のとき
+```
+
+```{r}
+tbl[2, ] / colSums(tbl)
+```
+
+
+---
+
+## 可視化: ROC曲線 (3/)
+
+AUC = Area Under Curve は性能の指標の1つ
+
+```{r roc2, out.height= 200}
+ROC(fitted(ml), mroz$inlf)
+```
+
+---
+
+## AIC (1/)
+
+モデルに含める変数をどのように定めるかについて「情報量基準」と呼ばれる概念がいくつか提唱されている。
+
+赤池情報量基準 (AIC) 
+
+$$\begin{aligned}
+\mathrm{AIC}
+= - \log L(\beta; y) + 2(k + 1)
+\end{aligned}$$
+
+を最小にする変数の組み合わせを選ぶ，というのが1つの基準である。
+
+```{r}
+y <- mroz$inlf; ftd <- fitted(ml)
+AIC <- - 2 * sum(y * log(ftd) 
+                 + (1 - y) * log(1 - ftd)) + 2 * 8
+AIC
+```
+
+---
+
+## AIC (2/)
+
+`step()` を使うと，AIC を減少させる変数の組み合わせを教えてくれる。
+
+```{r, eval=FALSE}
+ml2 <- step(ml)
+ml3 <- step(ml2)
+```
+
+---
+
+## 練習してみよう
+
+```r
+devtools::install_github("opueco/R4FunDrill")
+R4FunDrill::start("Day12")
+```
+チュートリアルがはじまるよ。
