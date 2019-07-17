@@ -38,12 +38,12 @@ options(width = 63)
 
 ## 回帰分析に使うデータ
 
-| $Y$      | $X_1$    | $X_2$    | $\cdots$ | $X_k$    |
-|----------|----------|----------|----------|----------|
-| $y_{11}$ | $x_{11}$ | $x_{12}$ | $\cdots$ | $x_{1k}$ |
-| $y_{21}$ | $x_{21}$ | $x_{22}$ | $\cdots$ | $x_{2k}$ |
+| $Y$     | $X_1$    | $X_2$    | $\cdots$ | $X_k$    |
+|---------|----------|----------|----------|----------|
+| $y_{1}$ | $x_{11}$ | $x_{12}$ | $\cdots$ | $x_{1k}$ |
+| $y_{2}$ | $x_{21}$ | $x_{22}$ | $\cdots$ | $x_{2k}$ |
 | $\vdots$ | $\vdots$ | $\vdots$ |          | $\vdots$ |
-| $y_{n1}$ | $x_{n1}$ | $x_{n2}$ |          | $x_{nk}$ |
+| $y_{n}$ | $x_{n1}$ | $x_{n2}$ |          | $x_{nk}$ |
 
 
 - 列は1つの変数
@@ -219,7 +219,7 @@ $$\begin{aligned}
 
 $$\frac{\partial \|e\|^2}{\partial \beta} = -2X^\top Y + 2X^\top X \beta = 0$$
 
-$$\Longrightarrow \beta = (X^\top X)^{-1} X^\top Y$$
+$$\Longrightarrow \hat\beta = (X^\top X)^{-1} X^\top Y$$
 
 ---
 
@@ -243,6 +243,44 @@ Y <- wage$lwage
 (beta <- solve(t(X) %*% X, t(X) %*% Y))
 ```
 
+---
+
+## $\hat\beta$ の分散 (1/)
+
+$$\begin{aligned}
+\hat\beta 
+&= (X^\top X)^{-1} X^\top Y\\
+&= (X^\top X)^{-1} X^\top (X\beta + e)\\
+&= \beta + (X^\top X)^{-1} X^\top e
+\end{aligned}$$
+
+通常，
+
+- $X$ が確定的かつ $\mathbb{E}[e] = 0$ とするか，あるいは
+- $\mathbb{E}[e | X] = 0$
+
+を仮定する $\Longrightarrow$ $\mathbb{E}[\hat \beta] = \beta$
+
+---
+
+
+## $\hat\beta$ の分散 (2/)
+
+$\hat\beta$ の分散共分散行列 (variance-covariance matrix) は
+
+$$\begin{aligned}
+  V_{\hat\beta} 
+  &= \mathbb{E}[(\hat\beta - \beta)(\hat\beta - \beta)^\top]\\
+  &= \mathbb{E}[(X^\top X)^{-1} X^\top ee^\top X (X^\top X)^{-1}]
+\end{aligned}$$
+
+等分散の仮定のもとでは， $\mathbb{E}[ee^\top | X] = \sigma^2 I$
+
+$$V_{\hat\beta} = \sigma^2 (X^\top X)^{-1}$$
+
+$\sigma^2$ は未知なので予測誤差の $\hat e = X\hat\beta - Y$ を使って推定: 
+
+$$\hat V_{\hat \beta} = \frac{\| \hat e \| ^2}{n - k - 1} (X^\top X)^{-1}$$
 
 ---
 
@@ -256,7 +294,7 @@ Y <- wage$lwage
   standard error というのを計算する。経済学ではこっちが標準？
   （これにもHC0 とか HC3 とか色々）
 
-とりあえず，古典的仮定のもとで計算する。  
+とりあえず，古典的仮定 (等分散, 正規分布) のもとで計算   
 不均一分散の原因が既知なら重み付き最小2乗法もGOOD
 
 ---
@@ -283,11 +321,11 @@ $$RSE = \sqrt{RSS / (n - k - 1)}$$
 
 ## t検定 (3/)
 
-$\hat \beta$ の分散共分散行列 $V_\beta$
+$\hat \beta$ の分散共分散行列の推定量 $\hat V_{\hat\beta}$
 
-$$V_\beta = RSE^2 \times (X^\top X)^{-1}$$
+$$\hat V_{\hat\beta} = RSE^2 \times (X^\top X)^{-1}$$
 ```{r}
-Vbeta <- RSE^2 * solve(t(X) %*% X)
+Vbeta <- RSE^2 * solve(t(X) %*% X)     # Cf. vcov(model)
 ```
 
 対角成分の平方根が SE 
@@ -314,7 +352,7 @@ stat
 
 ---
 
-## t値の計算 (5/)
+## t検定 (5/)
 
 自由度は（データの数 - 説明変数 - 1） なので，p値は
 
