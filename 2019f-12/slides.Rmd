@@ -264,7 +264,7 @@ ml
 ---
 
 ```{r}
-summary(m)
+summary(ml)
 ```
 
 ---
@@ -284,9 +284,107 @@ summary(mp)
 
 ---
 
-## 予測の精度 (1/)
+## 限界効果 (1/)
 
-`fitted()` を使えばよい。`predict()` で $x_i\beta$ を計算，これに $F$ を適用した
+係数の解釈には注意が必要。
+
+例えば，`educ` にかかる係数 ≒ 0.13 であるというのを見ただけでは「`educ` が1増えたときに `inlf==1` になる確率の増分」は分からない。
+
+$\beta$ の意味を理解するには確率のモデルに戻る必要がある。
+
+$$p = F(x \beta)$$
+
+説明変数 $x_{j}$ が1単位増加したときの確率の変化「限界効果」は 
+
+$$\frac{\partial p}{\partial x_{j}} = F'(x\beta) \beta_j$$
+
+---
+
+## 限界効果 (2/)
+
+限界効果は説明変数の値 $x$ に依存してしまうので，代表値をレポートするのが定石。
+
+- $x$ のすべての観測値について限界効果を計算して，それを平均する
+- $x$ の平均値を求めて，平均における限界効果を計算する
+
+という2つの方法を紹介しよう。
+
+以下ではプロビットの場合を紹介する。ロジットのケースはドリルを参照。
+
+---
+
+## 限界効果 (3/)
+
+#### 限界効果の平均
+
+$$\mathrm{AME}_j = \frac{1}{n} \sum_{i=1}^n F'(x_{i\bullet}\hat\beta) \hat\beta_j$$
+
+
+```{r}
+mean(dnorm(predict(mp))) * coef(mp)[-1]
+```
+
+---
+
+## 限界効果 (4/)
+
+#### 平均における限界効果
+
+$$\mathrm{MEM}_j = F'(\bar{x} \hat{\beta}) \hat{\beta}_j$$
+
+`colMeans()` で各列の平均を計算したあとに， `predict()` にわたして $\bar{x}\hat\beta$ を計算する。
+
+```{r}
+mp_bar <- as.data.frame.list(colMeans(mroz))
+mean(dnorm(predict(mp, newdata = mp_bar))) * coef(mp)[-1]
+```
+
+
+---
+
+## 限界効果 (5/)
+
+注意！ 上の計算はモデルに `exper` の 2次項が入っていることを考慮していない。きちんと計算するには **margins** パッケージを使うとよい。
+
+
+```{r, eval=FALSE}
+install.packages("margins")
+```
+
+```{r}
+library(margins)
+(ame <- margins(mp))
+```
+
+---
+
+## 限界効果 (6/)
+
+`exper` のAMEは次のように計算している。
+
+```{r, prompt=FALSE}
+ame_exper <- mean(dnorm(predict(mp)) 
+                  * (coef(mp)["exper"] 
+                  + 2 * coef(mp)["I(exper^2)"] * mroz$exper))
+ame_exper
+```
+
+問題1: なぜこのコードでうまくいくのか考えなさい。
+
+問題2: `exper` のMEMを計算しなさい。
+
+---
+
+class: section
+
+## モデルの評価
+
+---
+
+## 判定の精度 (1/)
+
+`predict()` と `fitted()` の違いに注意する。  
+`predict()` で $x_i\beta$ を計算，これに $F$ を適用した
 $F(x_i\beta)$ は `fitted()` で計算される。
 
 
@@ -305,8 +403,11 @@ sum((pnorm(predict(mp)) - fitted(mp))^2)
 
 ---
 
-## 予測の精度 (2/)
+## 判定の精度 (2/)
 
+$p = F(x\hat{\beta}) \ge 0.5$ となるときに $y = 1$ となるように定めてみよう。（ボーダーラインの 0.5 という数字は適当に定める）
+
+判定の正しさを表にする。対角成分が正しく判定できた数。
 
 ```{r}
 tbl <- table(fitted(ml) >= 0.5, mroz$inlf)
@@ -320,16 +421,20 @@ sum(diag(tbl)) / sum(tbl)
 
 ---
 
-## 可視化
+## 判定の精度 (3/)
 
-```{r plot-logit, fig.asp=0.5}
-plot(fitted(ml), mroz$inlf)
-```
+予測性能の評価についてもう少し真面目に考えるならば，
 
+- $\beta$ を決めるのに使うデータ（トレーニングデータ）
+- 性能を評価するデータ（テストデータ）
+
+を分けなければいけない。学習データに対する性能がよくても, 他のデータの予測には使えないかもしれない。
+
+R では `sample()`, `caret::createDataPartition()`, `modelr::resample_partition()` などの方法でデータを分割できるので各自試してほしい。
 
 ---
 
-## 可視化: ROC曲線 (1/)
+## ROC曲線 (1/)
 
 ```{r roc1}
 source("https://git.io/fjP7v")   # ROC.R
@@ -338,7 +443,7 @@ ROC(fitted(ml), mroz$inlf)
 
 ---
 
-## 可視化: ROC曲線 (2/)
+## ROC曲線 (2/)
 
 - $\alpha$ は $p \ge \alpha$ のとき $y = 1$ と判断する閾値 
 - $\alpha$ を 0から1まで動かして偽陽性率と真陽性率の組み合わせをプロットしたもの。
@@ -354,7 +459,7 @@ tbl[2, ] / colSums(tbl)
 
 ---
 
-## 可視化: ROC曲線 (3/)
+## ROC曲線 (3/)
 
 AUC = Area Under Curve は性能の指標の1つ
 
