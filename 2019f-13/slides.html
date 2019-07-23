@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club - Day 13</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club - Day 13
+## <a href="https://opueco.github.io/rclub-slides/2019f-13/slides.html" class="uri">https://opueco.github.io/rclub-slides/2019f-13/slides.html</a>
+### Kenji Sato
+### 2019/7/31
+
+---
+
+
+
+
+## 先週やったこと
+
+- 最尤法
+- ロジスティック回帰
+
+---
+
+## 今日やること
+
+- ポアソン回帰
+- さらなる学習のために
+  - 時系列データ
+  - 地理データ
+
+---
+
+class: section
+
+## ポアソン分布の復習
+
+---
+
+## ポアソン分布
+
+- 一定時間に平均的に `\(\lambda\)` 回起こると考えられている現象が実際に起こった回数の分布
+- `\(y\)` 回起こる確率は
+
+`$$p_y = \mathrm{Prob}(Y = y) = \frac{\lambda^y e^{-y}}{y!}$$`
+
+通常，データ `\(y\)` は観測可能でパラメータ `\(\lambda\)` は未知である
+
+---
+
+## ポアソン分布の密度関数
+
+
+```r
+k &lt;- 0:15
+plot(k, dpois(k, 5), type = 'b')
+```
+
+&lt;img src="slides_files/figure-html/pois1-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+---
+
+class: section
+
+## ポアソン回帰
+
+---
+
+## ポアソン回帰
+
+観測 `\(i = 1, 2, \dots, n\)` に対して
+
+- 「回数」 `\(y_i\)` を被説明変数
+- 要因と考えられるデータ `\(x_{i,1},\dots, x_{i,k}\)` を説明変数として
+  以下のように定式化する
+
+`$$\mathbb{E}[y_i] = \lambda_i = X_i\beta + \varepsilon_i$$`
+
+---
+
+## 最尤法 (1/)
+
+未知係数 `\(\beta\)` をうまく選んで
+
+`$$\text{尤度}
+= p_1p_2 \times \cdots \times p_n$$`
+
+を最大化する。ただし，
+
+`$$p_i = \frac{\lambda_i^{y_i} e^{-\lambda_i}}{y_i !}$$`
+
+---
+
+## 最尤法 (2/)
+
+あるいは
+
+`$$\begin{aligned}
+\text{対数尤度}
+&amp;= \sum_{i=1}^n \log p_i \\
+&amp;= \sum_{i=1}^n \left(
+     y_i \log \lambda_i - \lambda_i - \log y_i!
+   \right)
+\end{aligned}$$`
+
+を最大化する。
+
+---
+
+## モデルの変更
+
+`\(\lambda &gt; 0\)` という制約があるので
+
+`$$\lambda_i = X_i\beta + \varepsilon_i$$`
+
+というモデル化が適切でない場合もある。
+
+そこで，
+
+`$$\log \lambda_i = X_i \beta + \varepsilon_i$$`
+
+というモデルがよく使われる。ここでの `log` のような関数を「リンク関数」という。最初のケースはリンク関数が恒等写像（identity map）であると考える。
+
+
+---
+
+## 最尤推定量の計算
+
+最尤推定は非線形の最適化問題なので行列計算では対応できない。数値的に最適化問題を解く。
+
+R では次のコードで上の最尤推定量を計算できる。
+
+
+```r
+glm(y ~ x1 + x2, family = poisson(link = 'identity'))
+glm(y ~ x1 + x2, family = poisson(link = 'log'))
+```
+
+---
+
+## 実験 (1/)
+
+
+```r
+eps &lt;- rnorm(100, sd = 0.1)
+x &lt;- matrix(runif(100 * 2), ncol = 2)
+beta &lt;- c(1, 2, 3)
+y &lt;- sapply(beta[1] + beta[2] * x[, 1] + beta[3] * x[, 2] + eps, 
+            function(xb) rpois(1, exp(xb)))
+y
+```
+
+```
+##   [1]  69 128 291 108  21 309  66  85  19 112  16 191  16  35
+##  [15]  18  58 114 153  38  33  27  33  47 374  18 196  33  13
+##  [29]  29  90  22   9  44  42  14  15  29  15 198  89  35  50
+##  [43]  50  24  21  24  58  59  20  40   2  21  46  12  38  23
+##  [57]  68  12 213  14  10  40  34  22  74 144  18   8 164 334
+##  [71] 120  70  26  12  30  21  12   8  30  27  25  14   5  15
+##  [85] 104  55  49 105  65  29   7  30  72  28  27  10  12  22
+##  [99]  73  21
+```
+
+---
+
+## 実験 (2/)
+
+
+```r
+&gt; glm(y ~ x, family = poisson(link = 'log'))
+```
+
+```
+## 
+## Call:  glm(formula = y ~ x, family = poisson(link = "log"))
+## 
+## Coefficients:
+## (Intercept)           x1           x2  
+##       1.020        2.047        2.980  
+## 
+## Degrees of Freedom: 99 Total (i.e. Null);  97 Residual
+## Null Deviance:	    6008 
+## Residual Deviance: 99.58 	AIC: 649.3
+```
+
+---
+
+## Wooldridge CRIME1 (1/)
+
+
+```r
+&gt; library(wooldridge)
+&gt; data("crime1")
+&gt; m &lt;- glm(narr86 ~ pcnv + avgsen + tottime + ptime86, 
++          family = poisson(link = 'log'), data = crime1)
+&gt; m
+```
+
+```
+## 
+## Call:  glm(formula = narr86 ~ pcnv + avgsen + tottime + ptime86, family = poisson(link = "log"), 
+##     data = crime1)
+## 
+## Coefficients:
+## (Intercept)         pcnv       avgsen      tottime  
+##    -0.77351     -0.40852     -0.01375      0.02896  
+##     ptime86  
+##    -0.05353  
+## 
+## Degrees of Freedom: 2724 Total (i.e. Null);  2720 Residual
+## Null Deviance:	    3209 
+## Residual Deviance: 3167 	AIC: 4852
+```
+
+---
+
+## Wooldridge CRIME1 (2/)
+
+
+```r
+&gt; summary(m)
+```
+
+```
+## 
+## Call:
+## glm(formula = narr86 ~ pcnv + avgsen + tottime + ptime86, family = poisson(link = "log"), 
+##     data = crime1)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.5715  -0.9606  -0.8377   0.6854   7.6069  
+## 
+## Coefficients:
+##             Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept) -0.77351    0.03892 -19.872  &lt; 2e-16 ***
+## pcnv        -0.40852    0.08102  -5.042 4.61e-07 ***
+## avgsen      -0.01375    0.01918  -0.717  0.47359    
+## tottime      0.02896    0.01435   2.017  0.04366 *  
+## ptime86     -0.05353    0.02032  -2.635  0.00842 ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for poisson family taken to be 1)
+## 
+##     Null deviance: 3208.5  on 2724  degrees of freedom
+## Residual deviance: 3167.1  on 2720  degrees of freedom
+## AIC: 4852.4
+## 
+## Number of Fisher Scoring iterations: 6
+```
+
+---
+
+## 統計量の計算はどうやるのか？ (1/)
+
+パラメータの最尤推定量 `\(\hat \beta\)` はデータ数 `\(n\)` が大きければ フィッシャー情報量 `\(I(\beta)\)` の逆行列を分散に持つ正規分布に従う
+
+`$$\sqrt{n} (\hat\beta_n - \beta) \to \mathcal{N}(0, I(\beta)^{-1})$$`
+
+ポアソン回帰の場合 `\(I(\beta)\)` の推定量 `\(I(\hat\beta)\)` は
+
+`$$W =\mathrm{diag}\left\{ \exp(x_i \hat\beta) \mid i=1,\dots,n\right\}$$`
+
+`$$I(\hat\beta) = X^\top W X = \left[
+  \sum_{k=1}^{n}X_{ki}W_{kk}X_{kj}
+\right]_{ij}$$`
+
+---
+
+## 統計量の計算はどうやるのか？ (2/)
+
+`\(\hat\beta\)` の標準誤差（標準偏差を `\(\sqrt{n}\)` で除したもの）は `\(I(\hat\beta)\)` の逆行列の対角成分の平方根になる（`summary(m)` と比較せよ）
+
+
+```r
+X &lt;- model.matrix(m)
+W &lt;- exp(X %*% coef(m))
+XWX &lt;- matrix(numeric(ncol(X) ^ 2), ncol = ncol(X))
+for (i in 1:ncol(X)){
+  for (j in 1:ncol(X)){
+    XWX[i, j] &lt;- sum(X[, i] * W * X[, j])
+  }
+}
+sqrt(diag(solve(XWX)))
+```
+
+```
+## [1] 0.03892367 0.08102306 0.01918020 0.01435336 0.02031571
+```
+
+
+---
+
+class: section
+
+## さらなる学習のために
+
+---
+
+## 今後の方向性
+
+各自の関心に応じて引き続き勉強を進めていきましょう。  
+以下，いくつかの提案
+
+- 内生性の取り扱い，因果推論
+- 系列相関のあるモデル
+  - 時系列モデル
+  - 空間統計モデル
+- ベイズ推定
+- 機械学習アルゴリズム
+
+---
+
+## 内生性・因果推論
+
+`$$y = \beta_0 + \beta_1 x + e$$`
+
+`\(\beta_1 &gt; 0\)` であることが分かっても「 `\(x\)` 増やせば `\(y\)` を増やせる」とは言えない。
+
+誤差項 `\(e\)` が `\(x\)` と相関しているとき, `\(e\)` が増えたら `\(x\)` も `\(y\)` も増える，ということが起きているだけかもしれない。もちろん， `\(e\)` と相関している計測可能なデータがあれば，それを導入した重回帰モデルを使えばよい。
+
+計測できない場合は？  
+因果関係を解明するためには `\(x\)` と `\(e\)` の相関を取り除く工夫が必要。因果推論を勉強しよう。
+
+---
+
+## 系列相関
+
+`$$y_i = \beta_0 + \beta_1 x_i + e_i$$`
+
+というモデルの背後には, すべての `\(i \neq j\)` について
+
+`$$(y_i, x_i) \text{ と } (y_j, x_j) \text{ は独立}$$`
+とか
+
+`$$e_i \text{ と } e_j \text{ が無相関}$$`
+
+
+といった，観測の間の独立性・無相関性が必要である。これが言えない場合は，自己相関があるとか，系列相関がある，という。
+
+---
+
+## 時系列 (1/)
+
+ARMAモデルの例
+
+`$$y_{t} = \rho y_{t-1} + \theta e_{t-1} + e_{t}$$`
+
+
+```r
+&gt; t &lt;- 100; y &lt;- numeric(t + 1); e &lt;- rnorm(100, sd = 0.2)
+&gt; for (i in 1:t) y[i+1] &lt;- 0.6 * y[i] + 0.5 * e[i] + e[i+1]
+&gt; plot(y, type='l')
+```
+
+&lt;img src="slides_files/figure-html/series-1.png" height="250" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 時系列 (2/)
+
+データに前後関係があるようなモデルは「**時系列モデル**」という。時系列モデルでは過去から未来への依存関係（自己相関，系列相関）を特定化することがポイントになる。
+
+`\(y = (y_1, y2, \dots, y_T)\)` に対して `\(Ly = (y_2, y_3, \dots, y_{t-1})\)` とする。 `\(L\)` をラグオペレーターとして，前述のモデル自己相関関係を次のように表現できる。
+
+`$$y = \rho Ly + (\theta L + 1)e$$` 
+
+
+---
+
+## 時系列 (3/)
+
+誤差項の系列相関を無視してOLS推定すると？
+
+
+```r
+&gt; y1 &lt;- y[-1]; y0 &lt;- y[-length(y)]
+&gt; lm(y1 ~ y0)
+```
+
+```
+## 
+## Call:
+## lm(formula = y1 ~ y0)
+## 
+## Coefficients:
+## (Intercept)           y0  
+##    0.006923     0.750818
+```
+
+---
+
+## 時系列 (4/)
+
+時系列モデルに適した推定方法を選べば推定精度を向上できる。
+
+
+```r
+&gt; arima(y, order = c(1, 0, 1))
+```
+
+```
+## 
+## Call:
+## arima(x = y, order = c(1, 0, 1))
+## 
+## Coefficients:
+##          ar1     ma1  intercept
+##       0.5448  0.4851     0.0216
+## s.e.  0.1101  0.1327     0.0681
+## 
+## sigma^2 estimated as 0.04486:  log likelihood = 12.77,  aic = -17.54
+```
+
+
+---
+
+## 空間モデル (1/)
+
+`\(y\)`, `\(x\)` を地域レベルで集めたデータとする。地域間は独立ではなく，隣接した地域は似たような性質を
+持ったり，「外部効果」の影響を受けるかもしれない。例えば
+
+- 産業が栄えている地域の周辺で商業が盛んになる
+- 隣接地域の生産活動によって環境が悪化する
+
+---
+
+## 空間モデル (2/)
+
+周辺地域との相関構造を `\(W\)` という行列（「空間重み行列」という）で表現すると
+
+`$$y = \rho Wy + X\beta + e$$`
+
+といったモデルが考えられる。 `\(Wy\)` は「空間ラグ」  
+( `\(W\)` を説明変数に掛けたものを含めることもできる）
+
+空間相関を無視して `\(y = X\beta + e\)` を推定すると，内生性( `\(e\)` は `\(y\)` を相関する)のために適切に推定できない。
+
+このような問題を解決する手法は「**空間計量経済学**」として知られる。
+
+---
+
+## ベイズ推定
+
+頻度論的な統計学に基づいた分析だけを紹介した。
+
+ベイズ理論はもう1つの統計パラダイムで，「パラメータの確率分布」を推定するアイデアを提供する。（頻度論の立場ではパラメータは未知の定数と仮定）
+
+コンピュータが普及してますます重要性が増してきている。
+
+- ベイズで回帰分析
+- ベイズで時系列，空間計量モデル
+- ベイズ統計学にもとづいた学習理論とか
+
+---
+
+## 種々の機械学習モデル
+
+よりよい「予測」のための種々の方法が「**機械学習理論**」として発展している。
+（最小二乗法も機械学習の一部として説明される）
+
+例えば「決定木」
+
+
+```r
+&gt; install.packages("rpart")
+```
+
+
+```r
+&gt; library(rpart)
+&gt; par(xpd = TRUE)
+&gt; r &lt;- rpart(Species ~ ., data = iris)
+&gt; plot(r)
+&gt; text(r, use.n = TRUE)
+```
+
+---
+
+&lt;img src="slides_files/figure-html/dec-1.png" height="400" style="display: block; margin: auto;" /&gt;
+
+データを生成している確率モデルから離れて，予測アルゴリズムを設計する方法が関心を集めている。伝統的な統計学のモデルと並行して勉強しましょう。
+
+
+---
+
+## Python について
+
+プログラミング言語というのは1つ知っていればOKというものではなく，得意・不得意があります。
+
+特に，機械学習・AI をやってみたいという人は， Python というプログラミング言語が大変人気なので，ぜひ Python の入門書を手にとってみてください。
+
+「コマンドを組み合わせれば必要な作業を実行できる」ということを RClub で学んだみなさんであれば，少しの苦労で習得できると思います。
+
+
+---
+
+class: section
+
+## 後期にまたお会いしましょう！
+
+
+---
+
+## 追記: RClub 番外編
+
+8月の水曜日 4, 5コマあたり，後期の準備を兼ねて勉強会をします。
+テーマは流動的ですが
+
+- R で時系列分析
+- R で空間計量分析
+- R で機械学習
+
+のいずれかにしたいと思います。参加を希望される方は「このテーマなら参加する」といった
+条件付き参加表明でもかまいませんので佐藤までお声掛けください。場所は B1-319 です。  
+R をインストールしたPC をご用意ください。
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

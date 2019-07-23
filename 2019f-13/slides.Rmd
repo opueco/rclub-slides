@@ -1,0 +1,415 @@
+---
+title: R Club - Day 13
+subtitle: "https://opueco.github.io/rclub-slides/2019f-13/slides.html"
+author: Kenji Sato
+date: 2019/7/31
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: ["../asset/remark-css/style.css"]
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+header-includes: ['<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">', '<link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">']
+---
+
+```{r setup, include=FALSE}
+set.seed(100)
+knitr::opts_chunk$set(fig.align = "center", prompt = TRUE, dpi = 196,
+                      out.height = 400)
+options(width = 63)
+par(mar = c(1.5, 1.5, 3, 1.0))
+```
+
+## 先週やったこと
+
+- 最尤法
+- ロジスティック回帰
+
+---
+
+## 今日やること
+
+- ポアソン回帰
+- さらなる学習のために
+  - 時系列データ
+  - 地理データ
+
+---
+
+class: section
+
+## ポアソン分布の復習
+
+---
+
+## ポアソン分布
+
+- 一定時間に平均的に $\lambda$ 回起こると考えられている現象が実際に起こった回数の分布
+- $y$ 回起こる確率は
+
+$$p_y = \mathrm{Prob}(Y = y) = \frac{\lambda^y e^{-y}}{y!}$$
+
+通常，データ $y$ は観測可能でパラメータ $\lambda$ は未知である
+
+---
+
+## ポアソン分布の密度関数
+
+```{r pois1, fig.asp=0.8, prompt=FALSE}
+k <- 0:15
+plot(k, dpois(k, 5), type = 'b')
+```
+
+---
+
+class: section
+
+## ポアソン回帰
+
+---
+
+## ポアソン回帰
+
+観測 $i = 1, 2, \dots, n$ に対して
+
+- 「回数」 $y_i$ を被説明変数
+- 要因と考えられるデータ $x_{i,1},\dots, x_{i,k}$ を説明変数として
+  以下のように定式化する
+
+$$\mathbb{E}[y_i] = \lambda_i = X_i\beta + \varepsilon_i$$
+
+---
+
+## 最尤法 (1/)
+
+未知係数 $\beta$ をうまく選んで
+
+$$\text{尤度}
+= p_1p_2 \times \cdots \times p_n$$
+
+を最大化する。ただし，
+
+$$p_i = \frac{\lambda_i^{y_i} e^{-\lambda_i}}{y_i !}$$
+
+---
+
+## 最尤法 (2/)
+
+あるいは
+
+$$\begin{aligned}
+\text{対数尤度}
+&= \sum_{i=1}^n \log p_i \\
+&= \sum_{i=1}^n \left(
+     y_i \log \lambda_i - \lambda_i - \log y_i!
+   \right)
+\end{aligned}$$
+
+を最大化する。
+
+---
+
+## モデルの変更
+
+$\lambda > 0$ という制約があるので
+
+$$\lambda_i = X_i\beta + \varepsilon_i$$
+
+というモデル化が適切でない場合もある。
+
+そこで，
+
+$$\log \lambda_i = X_i \beta + \varepsilon_i$$
+
+というモデルがよく使われる。ここでの `log` のような関数を「リンク関数」という。最初のケースはリンク関数が恒等写像（identity map）であると考える。
+
+
+---
+
+## 最尤推定量の計算
+
+最尤推定は非線形の最適化問題なので行列計算では対応できない。数値的に最適化問題を解く。
+
+R では次のコードで上の最尤推定量を計算できる。
+
+```{r, eval=FALSE, prompt=FALSE}
+glm(y ~ x1 + x2, family = poisson(link = 'identity'))
+glm(y ~ x1 + x2, family = poisson(link = 'log'))
+```
+
+---
+
+## 実験 (1/)
+
+```{r, prompt=FALSE}
+eps <- rnorm(100, sd = 0.1)
+x <- matrix(runif(100 * 2), ncol = 2)
+beta <- c(1, 2, 3)
+y <- sapply(beta[1] + beta[2] * x[, 1] + beta[3] * x[, 2] + eps, 
+            function(xb) rpois(1, exp(xb)))
+y
+```
+
+---
+
+## 実験 (2/)
+
+```{r}
+glm(y ~ x, family = poisson(link = 'log'))
+```
+
+---
+
+## Wooldridge CRIME1 (1/)
+
+```{r}
+library(wooldridge)
+data("crime1")
+m <- glm(narr86 ~ pcnv + avgsen + tottime + ptime86, 
+         family = poisson(link = 'log'), data = crime1)
+m
+```
+
+---
+
+## Wooldridge CRIME1 (2/)
+
+```{r}
+summary(m)
+```
+
+---
+
+## 統計量の計算はどうやるのか？ (1/)
+
+パラメータの最尤推定量 $\hat \beta$ はデータ数 $n$ が大きければ フィッシャー情報量 $I(\beta)$ の逆行列を分散に持つ正規分布に従う
+
+$$\sqrt{n} (\hat\beta_n - \beta) \to \mathcal{N}(0, I(\beta)^{-1})$$
+
+ポアソン回帰の場合 $I(\beta)$ の推定量 $I(\hat\beta)$ は
+
+$$W =\mathrm{diag}\left\{ \exp(x_i \hat\beta) \mid i=1,\dots,n\right\}$$
+
+$$I(\hat\beta) = X^\top W X = \left[
+  \sum_{k=1}^{n}X_{ki}W_{kk}X_{kj}
+\right]_{ij}$$
+
+---
+
+## 統計量の計算はどうやるのか？ (2/)
+
+$\hat\beta$ の標準誤差（標準偏差を $\sqrt{n}$ で除したもの）は $I(\hat\beta)$ の逆行列の対角成分の平方根になる（`summary(m)` と比較せよ）
+
+```{r, prompt=FALSE}
+X <- model.matrix(m)
+W <- exp(X %*% coef(m))
+XWX <- matrix(numeric(ncol(X) ^ 2), ncol = ncol(X))
+for (i in 1:ncol(X)){
+  for (j in 1:ncol(X)){
+    XWX[i, j] <- sum(X[, i] * W * X[, j])
+  }
+}
+sqrt(diag(solve(XWX)))
+```
+
+
+---
+
+class: section
+
+## さらなる学習のために
+
+---
+
+## 今後の方向性
+
+各自の関心に応じて引き続き勉強を進めていきましょう。  
+以下，いくつかの提案
+
+- 内生性の取り扱い，因果推論
+- 系列相関のあるモデル
+  - 時系列モデル
+  - 空間統計モデル
+- ベイズ推定
+- 機械学習アルゴリズム
+
+---
+
+## 内生性・因果推論
+
+$$y = \beta_0 + \beta_1 x + e$$
+
+$\beta_1 > 0$ であることが分かっても「 $x$ 増やせば $y$ を増やせる」とは言えない。
+
+誤差項 $e$ が $x$ と相関しているとき, $e$ が増えたら $x$ も $y$ も増える，ということが起きているだけかもしれない。もちろん， $e$ と相関している計測可能なデータがあれば，それを導入した重回帰モデルを使えばよい。
+
+計測できない場合は？  
+因果関係を解明するためには $x$ と $e$ の相関を取り除く工夫が必要。因果推論を勉強しよう。
+
+---
+
+## 系列相関
+
+$$y_i = \beta_0 + \beta_1 x_i + e_i$$
+
+というモデルの背後には, すべての $i \neq j$ について
+
+$$(y_i, x_i) \text{ と } (y_j, x_j) \text{ は独立}$$
+とか
+
+$$e_i \text{ と } e_j \text{ が無相関}$$
+
+
+といった，観測の間の独立性・無相関性が必要である。これが言えない場合は，自己相関があるとか，系列相関がある，という。
+
+---
+
+## 時系列 (1/)
+
+ARMAモデルの例
+
+$$y_{t} = \rho y_{t-1} + \theta e_{t-1} + e_{t}$$
+
+```{r series, out.height=250, fig.asp=0.6}
+t <- 100; y <- numeric(t + 1); e <- rnorm(100, sd = 0.2)
+for (i in 1:t) y[i+1] <- 0.6 * y[i] + 0.5 * e[i] + e[i+1]
+plot(y, type='l')
+```
+
+---
+
+## 時系列 (2/)
+
+データに前後関係があるようなモデルは「**時系列モデル**」という。時系列モデルでは過去から未来への依存関係（自己相関，系列相関）を特定化することがポイントになる。
+
+$y = (y_1, y2, \dots, y_T)$ に対して $Ly = (y_2, y_3, \dots, y_{t-1})$ とする。 $L$ をラグオペレーターとして，前述のモデル自己相関関係を次のように表現できる。
+
+$$y = \rho Ly + (\theta L + 1)e$$ 
+
+
+---
+
+## 時系列 (3/)
+
+誤差項の系列相関を無視してOLS推定すると？
+
+```{r}
+y1 <- y[-1]; y0 <- y[-length(y)]
+lm(y1 ~ y0)
+```
+
+---
+
+## 時系列 (4/)
+
+時系列モデルに適した推定方法を選べば推定精度を向上できる。
+
+```{r}
+arima(y, order = c(1, 0, 1))
+```
+
+
+---
+
+## 空間モデル (1/)
+
+$y$, $x$ を地域レベルで集めたデータとする。地域間は独立ではなく，隣接した地域は似たような性質を
+持ったり，「外部効果」の影響を受けるかもしれない。例えば
+
+- 産業が栄えている地域の周辺で商業が盛んになる
+- 隣接地域の生産活動によって環境が悪化する
+
+---
+
+## 空間モデル (2/)
+
+周辺地域との相関構造を $W$ という行列（「空間重み行列」という）で表現すると
+
+$$y = \rho Wy + X\beta + e$$
+
+といったモデルが考えられる。 $Wy$ は「空間ラグ」  
+( $W$ を説明変数に掛けたものを含めることもできる）
+
+空間相関を無視して $y = X\beta + e$ を推定すると，内生性( $e$ は $y$ を相関する)のために適切に推定できない。
+
+このような問題を解決する手法は「**空間計量経済学**」として知られる。
+
+---
+
+## ベイズ推定
+
+頻度論的な統計学に基づいた分析だけを紹介した。
+
+ベイズ理論はもう1つの統計パラダイムで，「パラメータの確率分布」を推定するアイデアを提供する。（頻度論の立場ではパラメータは未知の定数と仮定）
+
+コンピュータが普及してますます重要性が増してきている。
+
+- ベイズで回帰分析
+- ベイズで時系列，空間計量モデル
+- ベイズ統計学にもとづいた学習理論とか
+
+---
+
+## 種々の機械学習モデル
+
+よりよい「予測」のための種々の方法が「**機械学習理論**」として発展している。
+（最小二乗法も機械学習の一部として説明される）
+
+例えば「決定木」
+
+```{r, eval=FALSE}
+install.packages("rpart")
+```
+
+```{r decisiontree, eval=FALSE}
+library(rpart)
+par(xpd = TRUE)
+r <- rpart(Species ~ ., data = iris)
+plot(r)
+text(r, use.n = TRUE)
+```
+
+---
+
+```{r dec, ref.label='decisiontree', echo=FALSE}
+```
+
+データを生成している確率モデルから離れて，予測アルゴリズムを設計する方法が関心を集めている。伝統的な統計学のモデルと並行して勉強しましょう。
+
+
+---
+
+## Python について
+
+プログラミング言語というのは1つ知っていればOKというものではなく，得意・不得意があります。
+
+特に，機械学習・AI をやってみたいという人は， Python というプログラミング言語が大変人気なので，ぜひ Python の入門書を手にとってみてください。
+
+「コマンドを組み合わせれば必要な作業を実行できる」ということを RClub で学んだみなさんであれば，少しの苦労で習得できると思います。
+
+
+---
+
+class: section
+
+## 後期にまたお会いしましょう！
+
+
+---
+
+## 追記: RClub 番外編
+
+8月の水曜日 4, 5コマあたり，後期の準備を兼ねて勉強会をします。
+テーマは流動的ですが
+
+- R で時系列分析
+- R で空間計量分析
+- R で機械学習
+
+のいずれかにしたいと思います。参加を希望される方は「このテーマなら参加する」といった
+条件付き参加表明でもかまいませんので佐藤までお声掛けください。場所は B1-319 です。  
+R をインストールしたPC をご用意ください。
+
