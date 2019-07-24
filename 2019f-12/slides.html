@@ -168,7 +168,7 @@ class: section
 
 `$$p_i = F(x_i \beta)$$`
 
-とすればよい。 `\(F\)` のような関数を**リンク関数**という
+とすればよい。 `\(F\)` （正確には `\(F^{-1}\)`）を**リンク関数**という
 
 ---
 
@@ -216,14 +216,20 @@ class: section
 
 これを使うと, `\(\beta\)` の線形関数として対数オッズを表現できる。
 
-`$$x_i \beta = \log \left(\frac{p}{1 - p}\right)$$`
+`$$x_i \beta = \log \left(\frac{p_i}{1 - p_i}\right)$$`
 
 
 ---
 
 ## 最尤推定 (1/)
 
-`\(y_i\)` のそれぞれは `\(p_i = F(x_i\beta)\)` のベルヌーイ分布であるから，対数尤度関数は
+`\(y_i\)` のそれぞれは `\(p_i = F(x_i\beta)\)` のベルヌーイ分布であるから，尤度関数は
+
+`$$L(\beta; y) = \prod_{i=1}^n p_i^{y_i}(1-p_i)^{1 - y_i}$$`
+
+
+
+対数尤度関数は
 
 `$$\begin{aligned}
 \log L(\beta; y) 
@@ -512,6 +518,34 @@ ame_exper
 
 ---
 
+## 問題2 の解答例
+
+
+```r
+&gt; xbar &lt;- as.data.frame.list(
++   colMeans(get_all_vars(fml, data = mroz)[-1]))
+&gt; margins(mp, at = xbar)
+```
+
+```
+## Average marginal effects at specified values
+```
+
+```
+## glm(formula = fml, family = binomial(link = "probit"), data = mroz)
+```
+
+```
+##  at(nwifeinc) at(educ) at(exper) at(age) at(kidslt6)
+##         20.13    12.29     10.63   42.54      0.2377
+##  at(kidsge6)  nwifeinc    educ   exper      age kidslt6
+##        1.353 -0.004545 0.04948 0.03146 -0.01998 -0.3282
+##  kidsge6
+##  0.01361
+```
+
+---
+
 class: section
 
 ## モデルの評価
@@ -675,7 +709,7 @@ AUC = Area Under Curve は性能の指標の1つ
 
 `$$\begin{aligned}
 \mathrm{AIC}
-= - \log L(\beta; y) + 2(k + 1)
+= - 2\log L(\beta; y) + 2(k + 1)
 \end{aligned}$$`
 
 を最小にする変数の組み合わせを選ぶ，というのが1つの基準である。
@@ -683,9 +717,9 @@ AUC = Area Under Curve は性能の指標の1つ
 
 ```r
 &gt; y &lt;- mroz$inlf; ftd &lt;- fitted(ml)
-&gt; AIC &lt;- - 2 * sum(y * log(ftd) 
+&gt; aic &lt;- - 2 * sum(y * log(ftd) 
 +                  + (1 - y) * log(1 - ftd)) + 2 * 8
-&gt; AIC
+&gt; aic    # AIC(ml)
 ```
 
 ```
