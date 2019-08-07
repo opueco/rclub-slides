@@ -1,0 +1,346 @@
+---
+title: R Club 番外編- Day 01
+subtitle: "https://opueco.github.io/rclub-slides/2019n-01"
+author: Kenji Sato
+date: 2019/8/7
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: ["../asset/remark-css/style.css"]
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+header-includes: ['<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">', '<link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|Yanone+Kaffeesatz" rel="stylesheet">']
+---
+
+```{r setup, include=FALSE}
+set.seed(100)
+knitr::opts_chunk$set(fig.align = "center", prompt = TRUE, dpi = 196,
+                      out.height = 450)
+options(width = 63)
+par(mar = c(1.5, 1.5, 3, 1.0))
+```
+
+## コンテンツ
+
+R で時系列分析  
+コンテンツは固まっていないので，手探りで進めます。
+
+- 馬場『[時系列分析と状態空間モデルの基礎: RとStanで学ぶ理論と実装](https://www.amazon.co.jp/%E6%99%82%E7%B3%BB%E5%88%97%E5%88%86%E6%9E%90%E3%81%A8%E7%8A%B6%E6%85%8B%E7%A9%BA%E9%96%93%E3%83%A2%E3%83%87%E3%83%AB%E3%81%AE%E5%9F%BA%E7%A4%8E-R%E3%81%A8Stan%E3%81%A7%E5%AD%A6%E3%81%B6%E7%90%86%E8%AB%96%E3%81%A8%E5%AE%9F%E8%A3%85-%E9%A6%AC%E5%A0%B4-%E7%9C%9F%E5%93%89/dp/4903814874)』
+- [DataCamp](https://www.datacamp.com)
+- [R Cookbook; Ch. 14](https://rc2e.com/timeseriesanalysis)
+
+予定としては  
+  8/7 (本日), 8/14 (水), 8/22 (**木**), 8/28 (水)　  
+あたりで，15時間くらい
+
+---
+
+## 目標
+
+- R で時系列データの操作をやってみる
+- R 初心者に時系列データ分析の基礎を教えられるようになる
+  - 教育用教材の収集と理解
+  - 後期 RClub 用のネタ探し
+- 自分の研究に使う
+- ファイナンスデータを分析して資産運用に役立てる
+
+---
+
+## 必要になりそうなもの（to be added）
+
+{xts}, {zoo}, 
+
+{quantmod}, {forecast}, {tseries}
+
+{urca}
+
+---
+
+## 時系列データ
+
+時間でラベル付けされたデータのこと。
+
+```{r}
+AirPassengers
+```
+
+---
+
+## ts / zoo / xts
+
+R にバンドルされている {stats} パッケージで基本的な時系列分析用の `ts` クラスが定義されている。
+
+```{r}
+class(AirPassengers)
+```
+
+
+機能が豊富な `zoo`, `xts` を使うのが主流らしい。`zoo` で使える手法のほとんどが `xts` クラスに対しても使えるので，とりあえず `xts` にする。
+
+```{r, message=FALSE}
+library(xts)
+airpassengers <- as.xts(AirPassengers)
+class(airpassengers)
+```
+
+
+---
+
+## クラス (1/)
+
+クラスというのは，
+
+- データ保存方法のルール
+- データ操作方法のルール（メソッド）
+
+をまとめたもの。特定クラスのルールに従って作られたデータを「オブジェクト」とか「インスタンス」という。
+
+R にはクラスの作り方が 4つある (S3, S4, RC, R6)。以下の説明は S3 というもっともシンプルなやりかた。
+
+---
+
+## クラス (2/)
+
+作ってみよう。
+
+```{r, prompt=FALSE}
+Student <- function(id, name, score){
+  structure(list(id=id, name=name, score=score), 
+            class = "student")
+}
+x <- Student(10, "Kenji", c(math = 100, eng = 90))
+x
+```
+
+---
+
+## クラス (3/)
+
+`print` という関数には `print.****` という関数がたくさんある。
+
+```{r, eval=FALSE}
+methods(print)
+```
+```{r, echo=FALSE}
+head(methods(print), 10)
+```
+
+ドットの後ろはクラスの名前，例えば `print.ar` はクラスが `ar` であるオブジェクトに対する `print` 関数
+
+`x` のクラスが `ar` であれば， `print(x)` を呼び出すと `print.ar(x)` が実行される。
+
+---
+
+## クラス (4/)
+
+`print.student` を作ってみよう。
+
+```{r, prompt=FALSE}
+print.student <- function(x, ...) {
+  cat("ID: ", x[["id"]], "\n", 
+      "Name: ", x[["name"]], "\n", sep = "")
+  cat("Scores\n")
+  print.default(x[["score"]])
+  invisible(x)
+}
+
+print(x)
+```
+
+---
+
+## クラス (5/)
+
+他にも色々とやってみよう。すべての関数が `print.student` のように拡張できる訳ではないことに注意。`print` は「S3 ジェネリック」という特殊な関数だからうまくいく
+
+```{r}
+print
+```
+
+特定のデータの構造に特有の操作をまとめるとコードの管理が容易になる。xts, zoo などは時系列分析のために作られたクラス
+
+
+
+---
+
+## quantmod (1/)
+
+```{r}
+# install.packages("quantmod")
+library(quantmod)
+```
+
+---
+
+## quantmod (2/)
+
+```{r}
+getSymbols(c("AAPL", "GOOG"), src = "yahoo")
+AAPL
+```
+
+
+---
+
+## quantmod (3/)
+
+```{r}
+GOOG
+```
+
+---
+
+```{r quantmod}
+candleChart(AAPL, multi.col=TRUE, theme = 'white') 
+```
+
+---
+
+```{r quantmod2}
+chartSeries(GOOG, theme = 'white')
+```
+
+---
+
+## xts オブジェクトのデータ
+
+**`xts` = 時間インデックス + 数値データ（行列）**
+
+- 時間インデックスは `index()` で取得する。
+- 数値データは `coredata()` で取得する。
+
+この形式のデータに対して種々の関数が定義されている。
+
+例えば，さっきみた `candleChart` とか `chartSeries` とか，データの一部を取得する方法など
+
+---
+
+## coredata
+
+```{r}
+coredata(GOOG)
+```
+
+---
+
+## index
+
+```{r}
+index(GOOG)
+```
+
+---
+
+
+```{r}
+GOOG["2019-07-31"] # 1日
+```
+
+
+```{r}
+GOOG["2019-07-21/31"] # 期間
+```
+
+---
+
+```{r}
+last(GOOG, '10 days')
+```
+
+
+---
+
+```{r, prompt=FALSE}
+dates <- seq(as.Date("2019-05-01"), 
+             as.Date("2019-05-30"), by = 2)
+GOOG[dates]
+```
+
+
+---
+
+## 移動平均
+
+```{r googma, out.height=380}
+GOOG2018 <- GOOG$GOOG.Open["2018"]
+MA <- rollmean(GOOG2018, 20)
+MA_GOOG <- merge(GOOG2018, MA)
+plot(MA_GOOG)
+```
+
+---
+
+class: section
+
+## 時間のデータ
+
+
+---
+
+## 日付データ
+
+文字列と時間のデータを区別する。
+
+```{r, error = TRUE}
+a <- "2018-05-10"
+b <- "2018-06-30"
+b - a
+```
+
+```{r}
+a <- as.Date(a)
+b <- as.Date(b)
+a
+```
+
+```{r}
+b - a
+```
+
+---
+
+## as.Date
+
+```{r}
+as.Date("2019-07-10")
+as.Date(c("2018/7/10", "2018/7/15"))
+as.Date("10/07/2019", tryFormats = "%d/%m/%Y")
+```
+
+```{r, error=TRUE}
+as.Date("7/10")
+```
+
+---
+
+## Date クラス
+
+```{r}
+a
+class(a)
+```
+
+Date クラスの日付に対して引き算，足し算が使える。今日から10日後の日付は？
+
+```{r}
+Sys.Date() + 10
+```
+
+---
+
+## POSIXct
+
+
+---
+
+## 今後の課題
+
+- R による時系列（原系列）の表現 (xts, zoo)
+- 時系列モデルと R によるモデル化
+- 時系列モデルに対する統計的手法
+  - 推定
+  - 検定
+  - 予測
