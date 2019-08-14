@@ -20,6 +20,7 @@ knitr::opts_chunk$set(fig.align = "center", prompt = FALSE, dpi = 196,
                       out.height = 450)
 options(width = 63)
 par(mar = c(1.5, 1.5, 3, 1.0))
+set.seed(100)
 ```
 
 ## コンテンツ (再掲)
@@ -80,7 +81,7 @@ plot.ts(y1)
 
 ---
 
-## シミュレーション2:  $-1 < \phi_1 < 1$
+## シミュレーション2:  $-1 < \phi_1 < 0$
 
 ```{r, out.height=300}
 y2 <- numeric(T)
@@ -246,7 +247,7 @@ $$\begin{aligned}
 ## シミュレーション: MA(2)
 
 ```{r y6, out.height=300}
-y6 <- numeric(T); eps <- rnorm(T) + 2
+y6 <- numeric(T); eps <- rnorm(T + 2)
 mu <- 0; th1 <- 0.7; th2 <- 0.6
 
 for (t in seq_along(eps)[-c(1, 2)]){
@@ -271,7 +272,7 @@ MA(q) 過程は係数を大きくしても分散が大きくなったりしな�
 正確な定義，証明は時系列分析の正書を参照のこと。
 
 ```{r y7, out.height=300}
-y7 <- numeric(T); eps <- rnorm(T) + 2
+y7 <- numeric(T); eps <- rnorm(T + 2)
 mu <- 0; th1 <- -0.3; th2 <- 1.5
 
 for (t in seq_along(eps)[-c(1, 2)]){

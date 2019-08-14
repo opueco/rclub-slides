@@ -83,7 +83,7 @@ plot.ts(y1)
 
 ---
 
-## シミュレーション2:  `\(-1 &lt; \phi_1 &lt; 1\)`
+## シミュレーション2:  `\(-1 &lt; \phi_1 &lt; 0\)`
 
 
 ```r
@@ -278,7 +278,7 @@ tsdisplay(y5)  # c &lt;- 0; phi1 &lt;- 0.7; phi2 &lt;- 0.3
 
 
 ```r
-y6 &lt;- numeric(T); eps &lt;- rnorm(T) + 2
+y6 &lt;- numeric(T); eps &lt;- rnorm(T + 2)
 mu &lt;- 0; th1 &lt;- 0.7; th2 &lt;- 0.6
 
 for (t in seq_along(eps)[-c(1, 2)]){
@@ -309,7 +309,7 @@ MA(q) 過程は係数を大きくしても分散が大きくなったりしな�
 
 
 ```r
-y7 &lt;- numeric(T); eps &lt;- rnorm(T) + 2
+y7 &lt;- numeric(T); eps &lt;- rnorm(T + 2)
 mu &lt;- 0; th1 &lt;- -0.3; th2 &lt;- 1.5
 
 for (t in seq_along(eps)[-c(1, 2)]){
@@ -465,12 +465,12 @@ Arima(y9, order = c(2, 1, 2))
 ## ARIMA(2,1,2) 
 ## 
 ## Coefficients:
-##          ar1     ar2      ma1     ma2
-##       0.4310  0.5409  -0.4065  0.2198
-## s.e.  0.0547  0.0574   0.0570  0.1112
+##           ar1      ar2      ma1     ma2
+##       -0.0038  -0.0415  -0.1514  0.6233
+## s.e.   0.0809   0.0686   0.0660  0.0504
 ## 
-## sigma^2 estimated as 2.736:  log likelihood=-958.7
-## AIC=1927.4   AICc=1927.52   BIC=1948.46
+## sigma^2 estimated as 2.22:  log likelihood=-909.09
+## AIC=1828.17   AICc=1828.3   BIC=1849.26
 ```
 
 
@@ -509,15 +509,15 @@ auto.arima(y9)
 
 ```
 ## Series: y9 
-## ARIMA(1,1,2) with drift 
+## ARIMA(0,1,2) 
 ## 
 ## Coefficients:
-##          ar1      ma1     ma2   drift
-##       0.0093  -0.1869  0.6927  4.4669
-## s.e.  0.0645   0.0458  0.0330  0.0985
+##           ma1     ma2
+##       -0.1555  0.6001
+## s.e.   0.0364  0.0349
 ## 
-## sigma^2 estimated as 2.119:  log likelihood=-894.01
-## AIC=1798.02   AICc=1798.15   BIC=1819.09
+## sigma^2 estimated as 2.213:  log likelihood=-909.27
+## AIC=1824.54   AICc=1824.59   BIC=1837.19
 ```
 
 
@@ -536,29 +536,7 @@ FRED から CPI for All Urban Consumers
 
 ```r
 library(quantmod)
-```
-
-```
-## Loading required package: TTR
-```
-
-```
-## Version 0.4-0 included new data defaults. See ?getSymbols.
-```
-
-```r
 cpi &lt;- getSymbols('CPIAUCNS', src='FRED', auto.assign = FALSE)
-```
-
-```
-## 'getSymbols' currently uses auto.assign=TRUE by default, but will
-## use auto.assign=FALSE in 0.5-0. You will still be able to use
-## 'loadSymbols' to automatically load data. getOption("getSymbols.env")
-## and getOption("getSymbols.auto.assign") will still be checked for
-## alternate defaults.
-## 
-## This message is shown once per session and may be disabled by setting 
-## options("getSymbols.warning4.0"=FALSE). See ?getSymbols for details.
 ```
 
 ---
