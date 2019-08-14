@@ -97,7 +97,7 @@ plot.ts(y2)
 ```
 
 &lt;img src="index_files/figure-html/unnamed-chunk-2-1.png" height="300" style="display: block; margin: auto;" /&gt;
-
+jjjj
 ---
 
 ## シミュレーション3:  `\(\phi_1 = 1\)`
@@ -363,7 +363,7 @@ c(phi1, phi2, th1, th2)
 ```r
 y8 &lt;- numeric(T)
 for (t in seq_along(eps)[-c(1, 2)]){
-  y8[t] &lt;- (c + phi1 * y8[i-1] + phi2 * y8[i-2] 
+  y8[t] &lt;- (c + phi1 * y8[t-1] + phi2 * y8[t-2] 
               + eps[t] + th1 * eps[t-1] + th2 * eps[t-2])
 }
 ```
@@ -465,12 +465,12 @@ Arima(y9, order = c(2, 1, 2))
 ## ARIMA(2,1,2) 
 ## 
 ## Coefficients:
-##           ar1      ar2      ma1     ma2
-##       -0.0038  -0.0415  -0.1514  0.6233
-## s.e.   0.0809   0.0686   0.0660  0.0504
+##          ar1     ar2      ma1     ma2
+##       0.7057  0.2703  -0.1702  0.6076
+## s.e.  0.0651  0.0650   0.0539  0.0375
 ## 
-## sigma^2 estimated as 2.22:  log likelihood=-909.09
-## AIC=1828.17   AICc=1828.3   BIC=1849.26
+## sigma^2 estimated as 2.188:  log likelihood=-907.33
+## AIC=1824.66   AICc=1824.78   BIC=1845.74
 ```
 
 
@@ -509,15 +509,15 @@ auto.arima(y9)
 
 ```
 ## Series: y9 
-## ARIMA(0,1,2) 
+## ARIMA(0,2,3) 
 ## 
 ## Coefficients:
-##           ma1     ma2
-##       -0.1555  0.6001
-## s.e.   0.0364  0.0349
+##           ma1     ma2      ma3
+##       -0.4574  0.6931  -0.1950
+## s.e.   0.0437  0.0350   0.0449
 ## 
-## sigma^2 estimated as 2.213:  log likelihood=-909.27
-## AIC=1824.54   AICc=1824.59   BIC=1837.19
+## sigma^2 estimated as 2.201:  log likelihood=-905.73
+## AIC=1819.46   AICc=1819.54   BIC=1836.32
 ```
 
 

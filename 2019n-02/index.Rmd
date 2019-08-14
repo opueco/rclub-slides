@@ -92,7 +92,7 @@ for (i in seq_along(y2)[-1]){
 }
 plot.ts(y2)
 ```
-
+jjjj
 ---
 
 ## シミュレーション3:  $\phi_1 = 1$
@@ -315,7 +315,7 @@ y_t = c + \phi_1 y_{t-1} + \cdots + \phi_p y_{t-p} \\
 c(phi1, phi2, th1, th2)
 y8 <- numeric(T)
 for (t in seq_along(eps)[-c(1, 2)]){
-  y8[t] <- (c + phi1 * y8[i-1] + phi2 * y8[i-2] 
+  y8[t] <- (c + phi1 * y8[t-1] + phi2 * y8[t-2] 
               + eps[t] + th1 * eps[t-1] + th2 * eps[t-2])
 }
 ```
