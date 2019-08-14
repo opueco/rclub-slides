@@ -387,7 +387,7 @@ $$y_t = \delta t + y_0 + \varepsilon_1 + \cdots + \varepsilon_t$$
 
 ```{r y9}
 y9 <- cumsum(y8)
-tsdisplay(y9[1:50])
+tsdisplay(y9)
 ```
 
 ---
@@ -402,7 +402,6 @@ Arima(y9, order = c(2, 1, 2))
 c(phi1, phi2, th1, th2)
 ```
 
-うまくいかない・・・・
 
 ---
 
