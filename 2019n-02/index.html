@@ -603,7 +603,7 @@ lcpi_arima
 ```r
 lcpi_forecast &lt;- forecast(lcpi_arima, h = length(lcpi) - 1100, 
                           level = c(95, 50))
-autoplot(lcpi_forecast)
+autoplot(lcpi_forecast) + autolayer(as.ts(lcpi))
 ```
 
 &lt;img src="index_files/figure-html/forecast-1.png" height="320" style="display: block; margin: auto;" /&gt;

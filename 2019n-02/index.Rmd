@@ -486,7 +486,7 @@ lcpi_arima
 ```{r forecast, out.height=320, fig.asp=0.6}
 lcpi_forecast <- forecast(lcpi_arima, h = length(lcpi) - 1100, 
                           level = c(95, 50))
-autoplot(lcpi_forecast)
+autoplot(lcpi_forecast) + autolayer(as.ts(lcpi))
 ```
 
 
