@@ -1,0 +1,512 @@
+---
+title: R Club 番外編- Day 02
+subtitle: "https://opueco.github.io/rclub-slides/2019n-02"
+author: Kenji Sato
+date: 2019/8/14
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: ["../asset/remark-css/style.css"]
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+header-includes: ['<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">', '<link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|yanone+Kaffeesatz" rel="stylesheet">']
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.align = "center", prompt = FALSE, dpi = 196,
+                      out.height = 450)
+options(width = 63)
+par(mar = c(1.5, 1.5, 3, 1.0))
+```
+
+## コンテンツ (再掲)
+
+R で時系列分析  
+コンテンツは固まっていないので，手探りで進めます。
+
+- 馬場『[時系列分析と状態空間モデルの基礎: RとStanで学ぶ理論と実装](https://www.amazon.co.jp/%E6%99%82%E7%B3%BB%E5%88%97%E5%88%86%E6%9E%90%E3%81%A8%E7%8A%B6%E6%85%8B%E7%A9%BA%E9%96%93%E3%83%A2%E3%83%87%E3%83%AB%E3%81%AE%E5%9F%BA%E7%A4%8E-R%E3%81%A8Stan%E3%81%A7%E5%AD%A6%E3%81%B6%E7%90%86%E8%AB%96%E3%81%A8%E5%AE%9F%E8%A3%85-%E9%A6%AC%E5%A0%B4-%E7%9C%9F%E5%93%89/dp/4903814874)』
+- [DataCamp](https://www.datacamp.com)
+- [R Cookbook; Ch. 14](https://rc2e.com/timeseriesanalysis)
+
+予定としては  
+  8/7 (終了), 8/14 (本日), 8/22 (**木**), 8/28 (水)　  
+あたりで，15時間くらい
+
+---
+
+## 今日の目標
+
+- 時系列モデル
+- Box-Jenkins 法
+
+---
+
+## AR モデル
+
+自己回帰モデル (autoregressive model)
+
+被説明変数 $y_t$ の説明変数に, 過去の $y_{t-1}, y_{t-2}, \dots$ を用いる
+
+過去のデータを「ラグ変数」という。
+
+---
+
+## AR(1) モデル
+
+1期前のラグ変数だけを使うモデルを AR(1) モデルという。
+
+$$\begin{aligned}
+  y_t = c + \phi_1 y_{t-1} + \varepsilon_t
+\end{aligned}$$
+
+$\varepsilon_t$ は独立同一な確率分布，ホワイトノイズ。
+
+---
+
+## シミュレーション1:  $0 < \phi_1 < 1$
+
+```{r, out.height=300}
+T <- 500; eps <- rnorm(T); y1 <- numeric(T)
+c <- 1; phi1 <- 0.8
+
+for (i in seq_along(y1)[-1]){
+  y1[i] <- c + phi1 * y1[i-1] + eps[i]
+}
+plot.ts(y1)
+```
+
+---
+
+## シミュレーション2:  $-1 < \phi_1 < 1$
+
+```{r, out.height=300}
+y2 <- numeric(T)
+c <- 1; phi1 <- - 0.8
+
+for (i in seq_along(y2)[-1]){
+  y2[i] <- c + phi1 * y2[i-1] + eps[i]
+}
+plot.ts(y2)
+```
+
+---
+
+## シミュレーション3:  $\phi_1 = 1$
+
+```{r, out.height=300}
+y3 <- numeric(T)
+c <- 0; phi1 <- 1
+
+for (i in seq_along(y3)[-1]){
+  y3[i] <- c + phi1 * y3[i-1] + eps[i]
+}
+plot.ts(y3)
+```
+
+---
+
+## シミュレーション:  $\phi_1 = -1$
+
+```{r, out.height=300}
+y4 <- numeric(T)
+c <- 0; phi1 <- -1
+
+for (i in seq_along(y4)[-1]){
+  y4[i] <- c + phi1 * y4[i-1] + eps[i]
+}
+plot.ts(y4)
+```
+
+---
+
+## 単位根
+
+$|\phi_1| = 1$ である AR(1) は時間が立つにつれて分散が大きくなる。次に出てくる特性根の絶対値が1なので，単位根という
+
+$$\begin{aligned}
+  y_t &= c + y_{t-1} + \varepsilon_t
+\end{aligned}$$
+
+このとき
+
+$$y_t - y_{t-1} = c + \varepsilon_t$$
+
+差分系列 $\Delta y_t = y_t - y_{t-1}$ は分散が一定であることに注意。
+
+差分を取ることで，非定常過程を定常にできることがある。
+
+---
+
+## AR(p) 
+
+もっと複雑な自己相関の構造があるかもしれない。  
+p次のARモデル：
+
+$$\begin{aligned}
+  y_t = c + \phi_1 y_{t-1} + \phi_2 y_{t-2} + \cdots + \phi_p y_{t-p} + \varepsilon_t
+\end{aligned}$$
+
+ラグオペレータ $L$ を使うと
+
+$$\begin{aligned}
+(1 - \phi_1 L - \phi_2 L^2 - \cdots - \phi_p L^p) y_t = c + \varepsilon_t
+\end{aligned}$$
+
+AR特性方程式
+
+$$1 - \phi_1 z - \phi_2 z^2 - \dots - \phi_p z^p =0$$
+
+の解（特性根）がすべて単位円の「外側」にあるときに，AR(p) 過程は弱定常になる。
+
+---
+
+## シミュレーション: AR(2)
+
+```{r, out.height=300}
+y5 <- numeric(T)
+c <- 0; phi1 <- 0.7; phi2 <- 0.3
+
+for (i in seq_along(y5)[-c(1, 2)]){
+  y5[i] <- c + phi1 * y5[i-1] + phi2 * y5[i-2] + eps[i]
+}
+plot.ts(y5)
+```
+
+
+---
+
+## R パッケージ
+
+```{r, message=FALSE}
+library(xts)
+library(forecast)
+```
+
+インストールされていない場合はインストールしてください。
+
+---
+
+## コレログラム
+
+過去のラグとの自己相関を可視化するのに「コレログラム」という図を用いる。
+
+- 自己相関 (ACF, autocorrelation function)
+- 偏自己相関 (PACF, partial autocorrelation function)
+
+
+stats パッケージの `acf`, `pacf` で作図できる。
+forecast パッケージの `tsdisplay` を使うとまとめて表示してくれる。
+
+---
+
+```{r y1}
+tsdisplay(y1)  # c <- 1; phi1 <- 0.8
+```
+
+---
+
+```{r y2}
+tsdisplay(y2)  # c <- 1; phi1 <- - 0.8
+```
+
+---
+
+```{r y3}
+tsdisplay(y3)  # c <- 0; phi1 <- 1
+```
+
+---
+
+```{r y4}
+tsdisplay(y4)  # c <- 0; phi1 <- -1
+```
+
+---
+
+```{r y5}
+tsdisplay(y5)  # c <- 0; phi1 <- 0.7; phi2 <- 0.3
+```
+
+---
+
+## MA(q) 過程
+
+移動平均 (Moving Average) モデル
+
+$$\begin{aligned}
+  y_t = \mu + \theta_1 \varepsilon_{t-1} + \theta_2 \varepsilon_{t-2} + 
+  \cdots + \theta_{q} \varepsilon_{t-q} + \varepsilon_t
+\end{aligned}$$
+
+---
+
+## シミュレーション: MA(2)
+
+```{r y6, out.height=300}
+y6 <- numeric(T); eps <- rnorm(T) + 2
+mu <- 0; th1 <- 0.7; th2 <- 0.6
+
+for (t in seq_along(eps)[-c(1, 2)]){
+  y6[t] <- mu + th1 * eps[t-1] + th2 * eps[t-2] + eps[t]
+}
+plot.ts(y6)
+```
+
+---
+
+```{r y6-2}
+tsdisplay(y6)
+```
+
+---
+
+## MA(q) 過程の定常性
+
+MA(q) 過程は係数を大きくしても分散が大きくなったりしないことを確認しておこう。
+常に，「定常性」が成り立つ。
+
+正確な定義，証明は時系列分析の正書を参照のこと。
+
+```{r y7, out.height=300}
+y7 <- numeric(T); eps <- rnorm(T) + 2
+mu <- 0; th1 <- -0.3; th2 <- 1.5
+
+for (t in seq_along(eps)[-c(1, 2)]){
+  y7[t] <- mu + th1 * eps[t-1] + th2 * eps[t-2] + eps[t]
+}
+```
+
+
+---
+
+```{r y7-2}
+tsdisplay(y7)
+```
+
+---
+
+## ARMA(p, q) モデル
+
+柴田 (2017) 『時系列解析』によるまとめ：
+
+- AR(p) モデル
+  - 過去の観測値に誤差を加えたモデルとして理解しやすい
+  - 自己共分散の構造は複雑
+- MA(q) モデル
+  - 自己共分散の構造は単純
+  - 将来の予測のモデルとしては理解しづらい
+  
+  
+→ AR + MA = ARMA モデル
+
+---
+
+## ARMA(p, q) モデル
+
+$$\begin{multline}
+y_t = c + \phi_1 y_{t-1} + \cdots + \phi_p y_{t-p} \\
+  +\varepsilon_t + \theta_1 \varepsilon_{t-1} + \cdots + \theta_q \varepsilon_{t-q}
+\end{multline}$$
+```{r y8}
+c(phi1, phi2, th1, th2)
+y8 <- numeric(T)
+for (t in seq_along(eps)[-c(1, 2)]){
+  y8[t] <- (c + phi1 * y8[i-1] + phi2 * y8[i-2] 
+              + eps[t] + th1 * eps[t-1] + th2 * eps[t-2])
+}
+```
+
+---
+
+```{r y8-2}
+tsdisplay(y8)
+```
+
+---
+
+## 単位根過程
+
+原系列 $y_t$ が非定常過程であり，差分系列 
+
+$$\Delta y_t = y_t - y_{t-1}$$
+
+が定常過程であるとき，過程は単位根過程 (unit root process) であるという。
+
+
+単位根過程を 1次和分過程 (integrated process) ともいう。 $I(1)$ と書く。
+
+```{r}
+dy3 <- y3 - lag.xts(y3)
+```
+
+---
+
+```{r y3-2}
+tsdisplay(y3)
+```
+
+---
+
+
+```{r dy3}
+tsdisplay(dy3)
+```
+
+---
+
+## さらに差分を取る I(d) 
+
+$\Delta y_t$ が定常過程ではなく，
+
+$$\Delta^2 y_t = \Delta y_t - \Delta y_{t-1}$$
+
+が定常過程であるならば，2次和分過程 I(2) という。
+
+I(3), I(4) も同様に定義できる。
+
+---
+
+## ARIMA(p, d, q)
+
+d 階差分をとった系列が定常かつ反転可能な ARMA(p,q) 過程であるとき， $y_t$ は ARIMA(p, d, q) 過程であるという。
+
+
+**例**: 単位根過程
+
+$$y_t = \delta + y_{t-1} + \varepsilon_t$$
+
+は線形トレンドのモデルとして使いやすい: 
+
+$$y_t = \delta t + y_0 + \varepsilon_1 + \cdots + \varepsilon_t$$
+
+---
+
+```{r y9}
+y9 <- cumsum(y8)
+tsdisplay(y9[1:50])
+```
+
+---
+
+## モデルの推定
+
+```{r}
+Arima(y9, order = c(2, 1, 2))
+```
+
+```{r}
+c(phi1, phi2, th1, th2)
+```
+
+うまくいかない・・・・
+
+---
+
+## 次数の決定
+
+次数はどうやって決めるか。概要
+
+- $d$ を決めるのは，単位根検定（ADF検定，KPSS検定，PP検定）を実施する。
+  - 差分を取ってさらに同じ検定をする。
+  - 単位根があると判定されたらさらに差分を取る。
+  - 差分を取る必要がないと判定されたら $d$ が確定する
+- ARMA(p, q) の係数は色々な次数を試して AIC/BIC などの情報量基準を用いてベストなものを判定する。
+  - 係数は最尤推定する
+  
+  
+---
+
+## auto.arima
+
+```{r}
+auto.arima(y9)
+```
+
+
+---
+
+## やり残したこと
+
+- 残差の自己相関のチェック
+
+---
+
+## 実データを使う
+
+FRED から CPI for All Urban Consumers
+
+```{r}
+library(quantmod)
+cpi <- getSymbols('CPIAUCNS', src='FRED', auto.assign = FALSE)
+```
+
+---
+
+## ACF
+
+```{r}
+tsdisplay(cpi)
+```
+
+---
+
+## 対数変換
+
+```{r}
+lcpi <- log(cpi)
+tsdisplay(lcpi)
+```
+
+---
+
+# train-test
+
+```{r}
+train <- lcpi[1:1100]
+test <- lcpi[1101:length(lcpi)]
+```
+
+---
+
+## auto.arima
+
+```{r}
+lcpi_arima <- auto.arima(train)
+lcpi_arima
+```
+
+
+---
+
+## forecast
+
+```{r forecast, out.height=320, fig.asp=0.6}
+lcpi_forecast <- forecast(lcpi_arima, h = length(lcpi) - 1100, 
+                          level = c(95, 50))
+autoplot(lcpi_forecast)
+```
+
+
+---
+
+## 練習
+
+色々なデータを使ってやってみよう。
+
+
+---
+
+## 次回以降の課題
+
+
+- ARIMAX
+- 季節調整
+- 同定・推定の詳細
+
+その後
+
+- 状態空間モデル
+- カルマンフィルタ

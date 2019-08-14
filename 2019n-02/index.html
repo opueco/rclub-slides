@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club 番外編- Day 02</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club 番外編- Day 02
+## <a href="https://opueco.github.io/rclub-slides/2019n-02" class="uri">https://opueco.github.io/rclub-slides/2019n-02</a>
+### Kenji Sato
+### 2019/8/14
+
+---
+
+
+
+
+## コンテンツ (再掲)
+
+R で時系列分析  
+コンテンツは固まっていないので，手探りで進めます。
+
+- 馬場『[時系列分析と状態空間モデルの基礎: RとStanで学ぶ理論と実装](https://www.amazon.co.jp/%E6%99%82%E7%B3%BB%E5%88%97%E5%88%86%E6%9E%90%E3%81%A8%E7%8A%B6%E6%85%8B%E7%A9%BA%E9%96%93%E3%83%A2%E3%83%87%E3%83%AB%E3%81%AE%E5%9F%BA%E7%A4%8E-R%E3%81%A8Stan%E3%81%A7%E5%AD%A6%E3%81%B6%E7%90%86%E8%AB%96%E3%81%A8%E5%AE%9F%E8%A3%85-%E9%A6%AC%E5%A0%B4-%E7%9C%9F%E5%93%89/dp/4903814874)』
+- [DataCamp](https://www.datacamp.com)
+- [R Cookbook; Ch. 14](https://rc2e.com/timeseriesanalysis)
+
+予定としては  
+  8/7 (終了), 8/14 (本日), 8/22 (**木**), 8/28 (水)　  
+あたりで，15時間くらい
+
+---
+
+## 今日の目標
+
+- 時系列モデル
+- Box-Jenkins 法
+
+---
+
+## AR モデル
+
+自己回帰モデル (autoregressive model)
+
+被説明変数 `\(y_t\)` の説明変数に, 過去の `\(y_{t-1}, y_{t-2}, \dots\)` を用いる
+
+過去のデータを「ラグ変数」という。
+
+---
+
+## AR(1) モデル
+
+1期前のラグ変数だけを使うモデルを AR(1) モデルという。
+
+`$$\begin{aligned}
+  y_t = c + \phi_1 y_{t-1} + \varepsilon_t
+\end{aligned}$$`
+
+`\(\varepsilon_t\)` は独立同一な確率分布，ホワイトノイズ。
+
+---
+
+## シミュレーション1:  `\(0 &lt; \phi_1 &lt; 1\)`
+
+
+```r
+T &lt;- 500; eps &lt;- rnorm(T); y1 &lt;- numeric(T)
+c &lt;- 1; phi1 &lt;- 0.8
+
+for (i in seq_along(y1)[-1]){
+  y1[i] &lt;- c + phi1 * y1[i-1] + eps[i]
+}
+plot.ts(y1)
+```
+
+&lt;img src="index_files/figure-html/unnamed-chunk-1-1.png" height="300" style="display: block; margin: auto;" /&gt;
+
+---
+
+## シミュレーション2:  `\(-1 &lt; \phi_1 &lt; 1\)`
+
+
+```r
+y2 &lt;- numeric(T)
+c &lt;- 1; phi1 &lt;- - 0.8
+
+for (i in seq_along(y2)[-1]){
+  y2[i] &lt;- c + phi1 * y2[i-1] + eps[i]
+}
+plot.ts(y2)
+```
+
+&lt;img src="index_files/figure-html/unnamed-chunk-2-1.png" height="300" style="display: block; margin: auto;" /&gt;
+
+---
+
+## シミュレーション3:  `\(\phi_1 = 1\)`
+
+
+```r
+y3 &lt;- numeric(T)
+c &lt;- 0; phi1 &lt;- 1
+
+for (i in seq_along(y3)[-1]){
+  y3[i] &lt;- c + phi1 * y3[i-1] + eps[i]
+}
+plot.ts(y3)
+```
+
+&lt;img src="index_files/figure-html/unnamed-chunk-3-1.png" height="300" style="display: block; margin: auto;" /&gt;
+
+---
+
+## シミュレーション:  `\(\phi_1 = -1\)`
+
+
+```r
+y4 &lt;- numeric(T)
+c &lt;- 0; phi1 &lt;- -1
+
+for (i in seq_along(y4)[-1]){
+  y4[i] &lt;- c + phi1 * y4[i-1] + eps[i]
+}
+plot.ts(y4)
+```
+
+&lt;img src="index_files/figure-html/unnamed-chunk-4-1.png" height="300" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 単位根
+
+`\(|\phi_1| = 1\)` である AR(1) は時間が立つにつれて分散が大きくなる。次に出てくる特性根の絶対値が1なので，単位根という
+
+`$$\begin{aligned}
+  y_t &amp;= c + y_{t-1} + \varepsilon_t
+\end{aligned}$$`
+
+このとき
+
+`$$y_t - y_{t-1} = c + \varepsilon_t$$`
+
+差分系列 `\(\Delta y_t = y_t - y_{t-1}\)` は分散が一定であることに注意。
+
+差分を取ることで，非定常過程を定常にできることがある。
+
+---
+
+## AR(p) 
+
+もっと複雑な自己相関の構造があるかもしれない。  
+p次のARモデル：
+
+`$$\begin{aligned}
+  y_t = c + \phi_1 y_{t-1} + \phi_2 y_{t-2} + \cdots + \phi_p y_{t-p} + \varepsilon_t
+\end{aligned}$$`
+
+ラグオペレータ `\(L\)` を使うと
+
+`$$\begin{aligned}
+(1 - \phi_1 L - \phi_2 L^2 - \cdots - \phi_p L^p) y_t = c + \varepsilon_t
+\end{aligned}$$`
+
+AR特性方程式
+
+`$$1 - \phi_1 z - \phi_2 z^2 - \dots - \phi_p z^p =0$$`
+
+の解（特性根）がすべて単位円の「外側」にあるときに，AR(p) 過程は弱定常になる。
+
+---
+
+## シミュレーション: AR(2)
+
+
+```r
+y5 &lt;- numeric(T)
+c &lt;- 0; phi1 &lt;- 0.7; phi2 &lt;- 0.3
+
+for (i in seq_along(y5)[-c(1, 2)]){
+  y5[i] &lt;- c + phi1 * y5[i-1] + phi2 * y5[i-2] + eps[i]
+}
+plot.ts(y5)
+```
+
+&lt;img src="index_files/figure-html/unnamed-chunk-5-1.png" height="300" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## R パッケージ
+
+
+```r
+library(xts)
+library(forecast)
+```
+
+インストールされていない場合はインストールしてください。
+
+---
+
+## コレログラム
+
+過去のラグとの自己相関を可視化するのに「コレログラム」という図を用いる。
+
+- 自己相関 (ACF, autocorrelation function)
+- 偏自己相関 (PACF, partial autocorrelation function)
+
+
+stats パッケージの `acf`, `pacf` で作図できる。
+forecast パッケージの `tsdisplay` を使うとまとめて表示してくれる。
+
+---
+
+
+```r
+tsdisplay(y1)  # c &lt;- 1; phi1 &lt;- 0.8
+```
+
+&lt;img src="index_files/figure-html/y1-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+tsdisplay(y2)  # c &lt;- 1; phi1 &lt;- - 0.8
+```
+
+&lt;img src="index_files/figure-html/y2-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+tsdisplay(y3)  # c &lt;- 0; phi1 &lt;- 1
+```
+
+&lt;img src="index_files/figure-html/y3-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+tsdisplay(y4)  # c &lt;- 0; phi1 &lt;- -1
+```
+
+&lt;img src="index_files/figure-html/y4-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+tsdisplay(y5)  # c &lt;- 0; phi1 &lt;- 0.7; phi2 &lt;- 0.3
+```
+
+&lt;img src="index_files/figure-html/y5-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+## MA(q) 過程
+
+移動平均 (Moving Average) モデル
+
+`$$\begin{aligned}
+  y_t = \mu + \theta_1 \varepsilon_{t-1} + \theta_2 \varepsilon_{t-2} + 
+  \cdots + \theta_{q} \varepsilon_{t-q} + \varepsilon_t
+\end{aligned}$$`
+
+---
+
+## シミュレーション: MA(2)
+
+
+```r
+y6 &lt;- numeric(T); eps &lt;- rnorm(T) + 2
+mu &lt;- 0; th1 &lt;- 0.7; th2 &lt;- 0.6
+
+for (t in seq_along(eps)[-c(1, 2)]){
+  y6[t] &lt;- mu + th1 * eps[t-1] + th2 * eps[t-2] + eps[t]
+}
+plot.ts(y6)
+```
+
+&lt;img src="index_files/figure-html/y6-1.png" height="300" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+tsdisplay(y6)
+```
+
+&lt;img src="index_files/figure-html/y6-2-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+## MA(q) 過程の定常性
+
+MA(q) 過程は係数を大きくしても分散が大きくなったりしないことを確認しておこう。
+常に，「定常性」が成り立つ。
+
+正確な定義，証明は時系列分析の正書を参照のこと。
+
+
+```r
+y7 &lt;- numeric(T); eps &lt;- rnorm(T) + 2
+mu &lt;- 0; th1 &lt;- -0.3; th2 &lt;- 1.5
+
+for (t in seq_along(eps)[-c(1, 2)]){
+  y7[t] &lt;- mu + th1 * eps[t-1] + th2 * eps[t-2] + eps[t]
+}
+```
+
+
+---
+
+
+```r
+tsdisplay(y7)
+```
+
+&lt;img src="index_files/figure-html/y7-2-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+## ARMA(p, q) モデル
+
+柴田 (2017) 『時系列解析』によるまとめ：
+
+- AR(p) モデル
+  - 過去の観測値に誤差を加えたモデルとして理解しやすい
+  - 自己共分散の構造は複雑
+- MA(q) モデル
+  - 自己共分散の構造は単純
+  - 将来の予測のモデルとしては理解しづらい
+  
+  
+→ AR + MA = ARMA モデル
+
+---
+
+## ARMA(p, q) モデル
+
+`$$\begin{multline}
+y_t = c + \phi_1 y_{t-1} + \cdots + \phi_p y_{t-p} \\
+  +\varepsilon_t + \theta_1 \varepsilon_{t-1} + \cdots + \theta_q \varepsilon_{t-q}
+\end{multline}$$`
+
+```r
+c(phi1, phi2, th1, th2)
+```
+
+```
+## [1]  0.7  0.3 -0.3  1.5
+```
+
+```r
+y8 &lt;- numeric(T)
+for (t in seq_along(eps)[-c(1, 2)]){
+  y8[t] &lt;- (c + phi1 * y8[i-1] + phi2 * y8[i-2] 
+              + eps[t] + th1 * eps[t-1] + th2 * eps[t-2])
+}
+```
+
+---
+
+
+```r
+tsdisplay(y8)
+```
+
+&lt;img src="index_files/figure-html/y8-2-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 単位根過程
+
+原系列 `\(y_t\)` が非定常過程であり，差分系列 
+
+`$$\Delta y_t = y_t - y_{t-1}$$`
+
+が定常過程であるとき，過程は単位根過程 (unit root process) であるという。
+
+
+単位根過程を 1次和分過程 (integrated process) ともいう。 `\(I(1)\)` と書く。
+
+
+```r
+dy3 &lt;- y3 - lag.xts(y3)
+```
+
+---
+
+
+```r
+tsdisplay(y3)
+```
+
+&lt;img src="index_files/figure-html/y3-2-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+
+```r
+tsdisplay(dy3)
+```
+
+&lt;img src="index_files/figure-html/dy3-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+## さらに差分を取る I(d) 
+
+`\(\Delta y_t\)` が定常過程ではなく，
+
+`$$\Delta^2 y_t = \Delta y_t - \Delta y_{t-1}$$`
+
+が定常過程であるならば，2次和分過程 I(2) という。
+
+I(3), I(4) も同様に定義できる。
+
+---
+
+## ARIMA(p, d, q)
+
+d 階差分をとった系列が定常かつ反転可能な ARMA(p,q) 過程であるとき， `\(y_t\)` は ARIMA(p, d, q) 過程であるという。
+
+
+**例**: 単位根過程
+
+`$$y_t = \delta + y_{t-1} + \varepsilon_t$$`
+
+は線形トレンドのモデルとして使いやすい: 
+
+`$$y_t = \delta t + y_0 + \varepsilon_1 + \cdots + \varepsilon_t$$`
+
+---
+
+
+```r
+y9 &lt;- cumsum(y8)
+tsdisplay(y9[1:50])
+```
+
+&lt;img src="index_files/figure-html/y9-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+## モデルの推定
+
+
+```r
+Arima(y9, order = c(2, 1, 2))
+```
+
+```
+## Series: y9 
+## ARIMA(2,1,2) 
+## 
+## Coefficients:
+##          ar1     ar2      ma1     ma2
+##       0.4310  0.5409  -0.4065  0.2198
+## s.e.  0.0547  0.0574   0.0570  0.1112
+## 
+## sigma^2 estimated as 2.736:  log likelihood=-958.7
+## AIC=1927.4   AICc=1927.52   BIC=1948.46
+```
+
+
+```r
+c(phi1, phi2, th1, th2)
+```
+
+```
+## [1]  0.7  0.3 -0.3  1.5
+```
+
+うまくいかない・・・・
+
+---
+
+## 次数の決定
+
+次数はどうやって決めるか。概要
+
+- `\(d\)` を決めるのは，単位根検定（ADF検定，KPSS検定，PP検定）を実施する。
+  - 差分を取ってさらに同じ検定をする。
+  - 単位根があると判定されたらさらに差分を取る。
+  - 差分を取る必要がないと判定されたら `\(d\)` が確定する
+- ARMA(p, q) の係数は色々な次数を試して AIC/BIC などの情報量基準を用いてベストなものを判定する。
+  - 係数は最尤推定する
+  
+  
+---
+
+## auto.arima
+
+
+```r
+auto.arima(y9)
+```
+
+```
+## Series: y9 
+## ARIMA(1,1,2) with drift 
+## 
+## Coefficients:
+##          ar1      ma1     ma2   drift
+##       0.0093  -0.1869  0.6927  4.4669
+## s.e.  0.0645   0.0458  0.0330  0.0985
+## 
+## sigma^2 estimated as 2.119:  log likelihood=-894.01
+## AIC=1798.02   AICc=1798.15   BIC=1819.09
+```
+
+
+---
+
+## やり残したこと
+
+- 残差の自己相関のチェック
+
+---
+
+## 実データを使う
+
+FRED から CPI for All Urban Consumers
+
+
+```r
+library(quantmod)
+```
+
+```
+## Loading required package: TTR
+```
+
+```
+## Version 0.4-0 included new data defaults. See ?getSymbols.
+```
+
+```r
+cpi &lt;- getSymbols('CPIAUCNS', src='FRED', auto.assign = FALSE)
+```
+
+```
+## 'getSymbols' currently uses auto.assign=TRUE by default, but will
+## use auto.assign=FALSE in 0.5-0. You will still be able to use
+## 'loadSymbols' to automatically load data. getOption("getSymbols.env")
+## and getOption("getSymbols.auto.assign") will still be checked for
+## alternate defaults.
+## 
+## This message is shown once per session and may be disabled by setting 
+## options("getSymbols.warning4.0"=FALSE). See ?getSymbols for details.
+```
+
+---
+
+## ACF
+
+
+```r
+tsdisplay(cpi)
+```
+
+&lt;img src="index_files/figure-html/unnamed-chunk-12-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+## 対数変換
+
+
+```r
+lcpi &lt;- log(cpi)
+tsdisplay(lcpi)
+```
+
+&lt;img src="index_files/figure-html/unnamed-chunk-13-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+# train-test
+
+
+```r
+train &lt;- lcpi[1:1100]
+test &lt;- lcpi[1101:length(lcpi)]
+```
+
+---
+
+## auto.arima
+
+
+```r
+lcpi_arima &lt;- auto.arima(train)
+lcpi_arima
+```
+
+```
+## Series: train 
+## ARIMA(1,2,3) 
+## 
+## Coefficients:
+##           ar1     ma1      ma2      ma3
+##       -0.6981  0.0157  -0.5592  -0.1385
+## s.e.   0.1433  0.1433   0.1056   0.0332
+## 
+## sigma^2 estimated as 3.303e-05:  log likelihood=4108.28
+## AIC=-8206.56   AICc=-8206.51   BIC=-8181.56
+```
+
+
+---
+
+## forecast
+
+
+```r
+lcpi_forecast &lt;- forecast(lcpi_arima, h = length(lcpi) - 1100, 
+                          level = c(95, 50))
+autoplot(lcpi_forecast)
+```
+
+&lt;img src="index_files/figure-html/forecast-1.png" height="320" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## 練習
+
+色々なデータを使ってやってみよう。
+
+
+---
+
+## 次回以降の課題
+
+
+- ARIMAX
+- 季節調整
+- 同定・推定の詳細
+
+その後
+
+- 状態空間モデル
+- カルマンフィルタ
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
