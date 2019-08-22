@@ -2,7 +2,7 @@
 title: R Club 番外編- Day 03
 subtitle: "https://opueco.github.io/rclub-slides/2019n-03"
 author: Kenji Sato
-date: 2019/8/14
+date: 2019/8/22
 output:
   xaringan::moon_reader:
     mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
