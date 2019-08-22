@@ -6,6 +6,7 @@ Slides for OPU RClub
 
 - [Day 01](2019n-01)
 - [Day 02](2019n-02)
+- [Day 03](2019n-03)
 
 ## 2019 前期
 
