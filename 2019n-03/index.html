@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>R Club 番外編- Day 03</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kenji Sato" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|yanone+Kaffeesatz" rel="stylesheet">
+    <link rel="stylesheet" href="../asset/remark-css/style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# R Club 番外編- Day 03
+## <a href="https://opueco.github.io/rclub-slides/2019n-03" class="uri">https://opueco.github.io/rclub-slides/2019n-03</a>
+### Kenji Sato
+### 2019/8/14
+
+---
+
+
+
+
+## コンテンツ (再掲)
+
+R で時系列分析  
+コンテンツは固まっていないので，手探りで進めます。
+
+- 馬場『[時系列分析と状態空間モデルの基礎: RとStanで学ぶ理論と実装](https://www.amazon.co.jp/%E6%99%82%E7%B3%BB%E5%88%97%E5%88%86%E6%9E%90%E3%81%A8%E7%8A%B6%E6%85%8B%E7%A9%BA%E9%96%93%E3%83%A2%E3%83%87%E3%83%AB%E3%81%AE%E5%9F%BA%E7%A4%8E-R%E3%81%A8Stan%E3%81%A7%E5%AD%A6%E3%81%B6%E7%90%86%E8%AB%96%E3%81%A8%E5%AE%9F%E8%A3%85-%E9%A6%AC%E5%A0%B4-%E7%9C%9F%E5%93%89/dp/4903814874)』
+- [DataCamp](https://www.datacamp.com)
+- [R Cookbook; Ch. 14](https://rc2e.com/timeseriesanalysis)
+
+予定としては  
+  8/7 (終了), 8/14 (終了), 8/22 (本日), 8/28 (水)　  
+あたりで，15時間くらい
+
+---
+
+## 今日の目標
+
+- 前回の復習
+- 時系列データの回帰分析
+
+
+---
+
+## ARMA(p, q) モデル
+
+柴田 (2017) 『時系列解析』によるまとめ：
+
+- AR(p) モデル
+  - 過去の観測値に誤差を加えたモデルとして理解しやすい
+  - 自己共分散の構造は複雑
+- MA(q) モデル
+  - 自己共分散の構造は単純
+  - 将来の予測のモデルとしては理解しづらい
+  
+  
+→ AR + MA = ARMA モデル
+
+---
+
+## ARMA(p, q) モデル
+
+`$$\begin{multline}
+y_t = c + \phi_1 y_{t-1} + \cdots + \phi_p y_{t-p} \\
+  +\varepsilon_t + \theta_1 \varepsilon_{t-1} + \cdots + \theta_q \varepsilon_{t-q}
+\end{multline}$$`
+
+`arima.sim` で簡単にシミュレーションできる。
+
+---
+
+
+```r
+x &lt;- arima.sim(model = list(order = c(2, 1, 1), 
+                            ar = c(0.9, -0.5), 
+                            ma = c(0.2)), 
+               n = 100)
+plot(x)
+```
+
+&lt;img src="index_files/figure-html/arimasim1-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+library(forecast)
+auto.arima(x)
+```
+
+```
+## Series: x 
+## ARIMA(2,1,1) 
+## 
+## Coefficients:
+##          ar1      ar2      ma1
+##       1.0881  -0.6849  -0.2636
+## s.e.  0.1130   0.0817   0.1539
+## 
+## sigma^2 estimated as 1.01:  log likelihood=-141.53
+## AIC=291.07   AICc=291.49   BIC=301.49
+```
+
+---
+
+## 練習
+
+`arima.sim()` を使って色々な時系列データを生成してみよう。
+
+- パラメータの設定方法を調べる
+- パラメータを変えて時系列プロット，コレログラムを比較
+
+---
+
+## SARIMAX
+
+ARIMAX = ARIMA + 外生的な項
+
+`$$y_t = \mathrm{ARMA} + \beta x_t$$`
+
+S = Seasonal，季節成分
+
+
+SARIMAX = 季節成分と外生項を持つ ARIMAモデル
+
+---
+
+## Seatbelts
+
+UKDriverDeaths is a time series giving the monthly totals of car drivers in Great Britain killed or seriously injured Jan 1969 to Dec 1984. Compulsory wearing of seat belts was introduced on 31 Jan 1983.
+
+- front = front-seat passengers killed or seriously injured.
+
+1983/01/31 以降は死亡・重傷事故は少なくなっているか？
+
+休暇の時期に事故が多い → 季節成分がありそう。  
+
+
+---
+
+## Seatbelts
+
+
+```r
+library(xts)
+seatbelts &lt;- as.xts(Seatbelts)
+plot(seatbelts$front)
+```
+
+&lt;img src="index_files/figure-html/seatbelt-1.png" height="350" style="display: block; margin: auto;" /&gt;
+
+---
+
+## ガソリン価格と重大事故の相関
+
+
+```r
+plot.default(seatbelts$PetrolPrice, seatbelts$front)
+```
+
+&lt;img src="index_files/figure-html/seatbelts-cor-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## コントロールを導入した auto.arima
+
+
+```r
+auto.arima(seatbelts$front, xreg = seatbelts$PetrolPrice)
+```
+
+```
+## Series: seatbelts$front 
+## Regression with ARIMA(1,0,0)(1,1,0)[12] errors 
+## 
+## Coefficients:
+##          ar1     sar1    drift  PetrolPrice
+##       0.4805  -0.3639  -1.9444   -3335.5277
+## s.e.  0.0655   0.0717   0.7929     919.3207
+## 
+## sigma^2 estimated as 8060:  log likelihood=-1063.89
+## AIC=2137.78   AICc=2138.13   BIC=2153.75
+```
+
+
+---
+
+class: section
+
+## 見せかけの回帰
+
+---
+
+## 2つのランダムウォーク
+
+`\(\epsilon^x\)` と `\(\epsilon^y\)` は独立とする。
+
+`$$\begin{aligned}
+  y_t = y_{t-1} + \epsilon^y_t\\
+  x_t = x_{t-1} + \epsilon^x_t
+\end{aligned}$$`
+
+回帰モデル
+
+`$$y_t = \alpha + \beta x_t + \epsilon_t$$`
+
+を考える。
+
+`\(\beta = 0\)` と推定されるべきだけど，実際にはそうならないことがある。
+
+
+---
+
+## サンプル 1: ARIMA(0, 1, 0)
+
+
+```r
+x &lt;- arima.sim(model = list(order = c(0, 1, 0)), n = 100)
+y &lt;- arima.sim(model = list(order = c(0, 1, 0)), n = 100)
+summary(lm(y ~ x))
+```
+
+```
+## 
+## Call:
+## lm(formula = y ~ x)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -4.3937 -1.6737 -0.1282  1.3659  6.0189 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)   2.8671     0.2495  11.490  &lt; 2e-16 ***
+## x             0.7618     0.1314   5.797 8.08e-08 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2.282 on 99 degrees of freedom
+## Multiple R-squared:  0.2534,	Adjusted R-squared:  0.2459 
+## F-statistic:  33.6 on 1 and 99 DF,  p-value: 8.078e-08
+```
+
+---
+
+## サンプル 2: ARIMA(1, 1, 0)
+
+
+```r
+x &lt;- arima.sim(model = list(order = c(1,1,0), ar = 0.8), n = 100)
+y &lt;- arima.sim(model = list(order = c(1,1,0), ar = 0.6), n = 100)
+m &lt;- lm(y ~ x)
+summary(m)
+```
+
+```
+## 
+## Call:
+## lm(formula = y ~ x)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -15.4585  -4.8523   0.3485   6.2878  15.2705 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -7.41683    0.74657  -9.935  &lt; 2e-16 ***
+## x           -0.11004    0.03863  -2.848  0.00535 ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 6.892 on 99 degrees of freedom
+## Multiple R-squared:  0.07574,	Adjusted R-squared:  0.06641 
+## F-statistic: 8.113 on 1 and 99 DF,  p-value: 0.005345
+```
+
+
+---
+
+## 見せかけの回帰
+
+spurious regressions
+
+単位根があると，なんの関係もない2つの時系列データが相関しているように見えることがある。
+
+残差の自己相関が悪さをしている。残差に自己相関があると最小二乗推定量にバイアスがある（一致性がない）
+
+---
+
+
+```r
+plot(resid(m))
+```
+
+&lt;img src="index_files/figure-html/resid-1.png" height="450" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+## 見せかけの回帰を防ぐ
+
+- 説明変数と被説明変数のラグ変数（どちらか1つまたは両方）を回帰モデルに含める
+- VAR モデルを使う
+- 差分をとって定常過程にしてから回帰する
+
+---
+
+## ラグを含める方法
+
+
+```r
+X &lt;- cbind(y, x, ly = lag(y), lx = lag(x))
+r &lt;- lm(y ~ x + lx + ly, data = X)
+summary(r)
+```
+
+```
+## 
+## Call:
+## lm(formula = y ~ x + lx + ly, data = X)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.3547 -1.0078  0.0692  0.9217  3.0907 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -0.20704    0.20682  -1.001    0.319    
+## x            0.05130    0.09566   0.536    0.593    
+## lx          -0.03696    0.09475  -0.390    0.697    
+## ly           0.96970    0.02023  47.944   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.327 on 96 degrees of freedom
+##   (2 observations deleted due to missingness)
+## Multiple R-squared:  0.9648,	Adjusted R-squared:  0.9637 
+## F-statistic: 876.5 on 3 and 96 DF,  p-value: &lt; 2.2e-16
+```
+
+---
+
+## 差分を取ることに関する注意
+
+- 差分を取ろうとする系列が実は定常過程である場合には，不要な差分を取ることで情報が失われてしまう。
+- 単位根があるとわかっていても，回帰モデルが「見せかけの回帰」になるとは限らない。共和分関係がないことをチェックする必要がある。
+
+---
+
+## 共和分
+
+cointegration
+
+`\(x_t\)`, `\(y_t\)` を単位根過程 I(1) とする。 `\(z_t = ax_t + b y_t\)` が定常過程 I(0) となるような `\(a\)`, `\(b\)` が存在するとき， `\(x_t\)` と `\(y_t\)` の間に共和分関係があるという。
+
+定常過程 `\(z_t\)` の平均は時間に依存せず一定なので，共和分関係は
+
+`$$ax_t + b y_t = c \quad (= \mathbb E z_t)$$`
+
+という均衡関係を表している。
+
+---
+
+## Phillips-Ouliaris 検定
+
+テストデータ
+
+
+```r
+xc &lt;- arima.sim(model = list(order = c(1,1,0), ar = 0.8), n = 100)
+yc &lt;- as.ts(10 + rnorm(100)) - xc
+dta &lt;- cbind(yc, xc)
+lm(yc ~ xc, data = dta)
+```
+
+```
+## 
+## Call:
+## lm(formula = yc ~ xc, data = dta)
+## 
+## Coefficients:
+## (Intercept)           xc  
+##       9.891       -1.011
+```
+
+
+```r
+library(urca)
+summary(ca.po(dta, demean = "constant"))
+```
+
+---
+
+## Phillips-Ouliaris 検定
+
+共和分関係がある vs 共和分関係がない
+
+
+```
+## 
+## ######################################## 
+## # Phillips and Ouliaris Unit Root Test # 
+## ######################################## 
+## 
+## Test of type Pu 
+## detrending of series with constant only 
+## 
+## 
+## Call:
+## lm(formula = z[, 1] ~ z[, -1])
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -2.70060 -0.68038  0.08328  0.69786  2.38616 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  9.891408   0.196163   50.42   &lt;2e-16 ***
+## z[, -1]     -1.010905   0.007836 -129.01   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.068 on 98 degrees of freedom
+## Multiple R-squared:  0.9941,	Adjusted R-squared:  0.9941 
+## F-statistic: 1.664e+04 on 1 and 98 DF,  p-value: &lt; 2.2e-16
+## 
+## 
+## Value of test-statistic is: 93.8772 
+## 
+## Critical values of Pu are:
+##                   10pct   5pct    1pct
+## critical values 27.8536 33.713 48.0021
+```
+
+---
+
+## 注意点
+
+- 3 つの I(1) 時系列の線形結合が I(0) になるなど，共和分関係は多変数に拡張される。
+- 定常時系列を生み出す係数は一意的に定まるとは限らない。
+- したがって，OLSの推定結果に誤りがある場合もある。
+
+VAR を用いた共和分関係の推定を用いるのがよさそう。
+
+---
+
+## 問題
+
+共和分との関わりを議論せよ。（沖本 pp. 132-4）
+
+- ケインズ型の消費関数の推定
+- 購買力平価仮説の検定
+
+
+---
+
+## 次回以降の課題
+
+
+- 季節調整
+- 同定・推定の詳細
+- 状態空間モデル
+- カルマンフィルタ
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

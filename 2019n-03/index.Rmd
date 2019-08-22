@@ -1,0 +1,313 @@
+---
+title: R Club 番外編- Day 03
+subtitle: "https://opueco.github.io/rclub-slides/2019n-03"
+author: Kenji Sato
+date: 2019/8/14
+output:
+  xaringan::moon_reader:
+    mathjax: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    css: ["../asset/remark-css/style.css"]
+    lib_dir: libs
+    nature:
+      countIncrementalSlides: no
+      highlightLines: yes
+      highlightStyle: github
+header-includes: ['<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">', '<link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c|Sawarabi+Gothic|Source+Code+Pro|yanone+Kaffeesatz" rel="stylesheet">']
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.align = "center", prompt = FALSE, dpi = 196,
+                      out.height = 450)
+options(width = 63)
+par(mar = c(1.5, 1.5, 3, 1.0))
+set.seed(100)
+```
+
+## コンテンツ (再掲)
+
+R で時系列分析  
+コンテンツは固まっていないので，手探りで進めます。
+
+- 馬場『[時系列分析と状態空間モデルの基礎: RとStanで学ぶ理論と実装](https://www.amazon.co.jp/%E6%99%82%E7%B3%BB%E5%88%97%E5%88%86%E6%9E%90%E3%81%A8%E7%8A%B6%E6%85%8B%E7%A9%BA%E9%96%93%E3%83%A2%E3%83%87%E3%83%AB%E3%81%AE%E5%9F%BA%E7%A4%8E-R%E3%81%A8Stan%E3%81%A7%E5%AD%A6%E3%81%B6%E7%90%86%E8%AB%96%E3%81%A8%E5%AE%9F%E8%A3%85-%E9%A6%AC%E5%A0%B4-%E7%9C%9F%E5%93%89/dp/4903814874)』
+- [DataCamp](https://www.datacamp.com)
+- [R Cookbook; Ch. 14](https://rc2e.com/timeseriesanalysis)
+
+予定としては  
+  8/7 (終了), 8/14 (終了), 8/22 (本日), 8/28 (水)　  
+あたりで，15時間くらい
+
+---
+
+## 今日の目標
+
+- 前回の復習
+- 時系列データの回帰分析
+
+
+---
+
+## ARMA(p, q) モデル
+
+柴田 (2017) 『時系列解析』によるまとめ：
+
+- AR(p) モデル
+  - 過去の観測値に誤差を加えたモデルとして理解しやすい
+  - 自己共分散の構造は複雑
+- MA(q) モデル
+  - 自己共分散の構造は単純
+  - 将来の予測のモデルとしては理解しづらい
+  
+  
+→ AR + MA = ARMA モデル
+
+---
+
+## ARMA(p, q) モデル
+
+$$\begin{multline}
+y_t = c + \phi_1 y_{t-1} + \cdots + \phi_p y_{t-p} \\
+  +\varepsilon_t + \theta_1 \varepsilon_{t-1} + \cdots + \theta_q \varepsilon_{t-q}
+\end{multline}$$
+
+`arima.sim` で簡単にシミュレーションできる。
+
+---
+
+```{r arimasim1}
+x <- arima.sim(model = list(order = c(2, 1, 1), 
+                            ar = c(0.9, -0.5), 
+                            ma = c(0.2)), 
+               n = 100)
+plot(x)
+```
+
+---
+
+```{r arimasim1-est, message=FALSE}
+library(forecast)
+auto.arima(x)
+```
+
+---
+
+## 練習
+
+`arima.sim()` を使って色々な時系列データを生成してみよう。
+
+- パラメータの設定方法を調べる
+- パラメータを変えて時系列プロット，コレログラムを比較
+
+---
+
+## SARIMAX
+
+ARIMAX = ARIMA + 外生的な項
+
+$$y_t = \mathrm{ARMA} + \beta x_t$$
+
+S = Seasonal，季節成分
+
+
+SARIMAX = 季節成分と外生項を持つ ARIMAモデル
+
+---
+
+## Seatbelts
+
+UKDriverDeaths is a time series giving the monthly totals of car drivers in Great Britain killed or seriously injured Jan 1969 to Dec 1984. Compulsory wearing of seat belts was introduced on 31 Jan 1983.
+
+- front = front-seat passengers killed or seriously injured.
+
+1983/01/31 以降は死亡・重傷事故は少なくなっているか？
+
+休暇の時期に事故が多い → 季節成分がありそう。  
+
+
+---
+
+## Seatbelts
+
+```{r seatbelt, message=FALSE, out.height=350}
+library(xts)
+seatbelts <- as.xts(Seatbelts)
+plot(seatbelts$front)
+```
+
+---
+
+## ガソリン価格と重大事故の相関
+
+```{r seatbelts-cor}
+plot.default(seatbelts$PetrolPrice, seatbelts$front)
+```
+
+
+---
+
+## コントロールを導入した auto.arima
+
+```{r, cache=TRUE}
+auto.arima(seatbelts$front, xreg = seatbelts$PetrolPrice)
+```
+
+
+---
+
+class: section
+
+## 見せかけの回帰
+
+---
+
+## 2つのランダムウォーク
+
+$\epsilon^x$ と $\epsilon^y$ は独立とする。
+
+$$\begin{aligned}
+  y_t = y_{t-1} + \epsilon^y_t\\
+  x_t = x_{t-1} + \epsilon^x_t
+\end{aligned}$$
+
+回帰モデル
+
+$$y_t = \alpha + \beta x_t + \epsilon_t$$
+
+を考える。
+
+$\beta = 0$ と推定されるべきだけど，実際にはそうならないことがある。
+
+
+---
+
+## サンプル 1: ARIMA(0, 1, 0)
+
+```{r rw}
+x <- arima.sim(model = list(order = c(0, 1, 0)), n = 100)
+y <- arima.sim(model = list(order = c(0, 1, 0)), n = 100)
+summary(lm(y ~ x))
+```
+
+---
+
+## サンプル 2: ARIMA(1, 1, 0)
+
+```{r arima110}
+x <- arima.sim(model = list(order = c(1,1,0), ar = 0.8), n = 100)
+y <- arima.sim(model = list(order = c(1,1,0), ar = 0.6), n = 100)
+m <- lm(y ~ x)
+summary(m)
+```
+
+
+---
+
+## 見せかけの回帰
+
+spurious regressions
+
+単位根があると，なんの関係もない2つの時系列データが相関しているように見えることがある。
+
+残差の自己相関が悪さをしている。残差に自己相関があると最小二乗推定量にバイアスがある（一致性がない）
+
+---
+
+```{r resid}
+plot(resid(m))
+```
+
+
+---
+
+## 見せかけの回帰を防ぐ
+
+- 説明変数と被説明変数のラグ変数（どちらか1つまたは両方）を回帰モデルに含める
+- VAR モデルを使う
+- 差分をとって定常過程にしてから回帰する
+
+---
+
+## ラグを含める方法
+
+```{r}
+X <- cbind(y, x, ly = lag(y), lx = lag(x))
+r <- lm(y ~ x + lx + ly, data = X)
+summary(r)
+```
+
+---
+
+## 差分を取ることに関する注意
+
+- 差分を取ろうとする系列が実は定常過程である場合には，不要な差分を取ることで情報が失われてしまう。
+- 単位根があるとわかっていても，回帰モデルが「見せかけの回帰」になるとは限らない。共和分関係がないことをチェックする必要がある。
+
+---
+
+## 共和分
+
+cointegration
+
+$x_t$, $y_t$ を単位根過程 I(1) とする。 $z_t = ax_t + b y_t$ が定常過程 I(0) となるような $a$, $b$ が存在するとき， $x_t$ と $y_t$ の間に共和分関係があるという。
+
+定常過程 $z_t$ の平均は時間に依存せず一定なので，共和分関係は
+
+$$ax_t + b y_t = c \quad (= \mathbb E z_t)$$
+
+という均衡関係を表している。
+
+---
+
+## Phillips-Ouliaris 検定
+
+テストデータ
+
+```{r}
+xc <- arima.sim(model = list(order = c(1,1,0), ar = 0.8), n = 100)
+yc <- as.ts(10 + rnorm(100)) - xc
+dta <- cbind(yc, xc)
+lm(yc ~ xc, data = dta)
+```
+
+```{r capo, eval=FALSE}
+library(urca)
+summary(ca.po(dta, demean = "constant"))
+```
+
+---
+
+## Phillips-Ouliaris 検定
+
+共和分関係がある vs 共和分関係がない
+
+```{r ref.label="capo", echo=FALSE}
+```
+
+---
+
+## 注意点
+
+- 3 つの I(1) 時系列の線形結合が I(0) になるなど，共和分関係は多変数に拡張される。
+- 定常時系列を生み出す係数は一意的に定まるとは限らない。
+- したがって，OLSの推定結果に誤りがある場合もある。
+
+VAR を用いた共和分関係の推定を用いるのがよさそう。
+
+---
+
+## 問題
+
+共和分との関わりを議論せよ。（沖本 pp. 132-4）
+
+- ケインズ型の消費関数の推定
+- 購買力平価仮説の検定
+
+
+---
+
+## 次回以降の課題
+
+
+- 季節調整
+- 同定・推定の詳細
+- 状態空間モデル
+- カルマンフィルタ
