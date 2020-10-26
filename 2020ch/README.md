@@ -1,8 +1,8 @@
 # RClub 
 
-2020年度後期
+2020蟷ｴ蠎ｦ蠕梧悄
 
-## 中国語バージョン
+##  荳ｭ蝗ｽ隱槭ヰ繝ｼ繧ｸ繝ｧ繝ｳ
 
 1. [day01](day01.html)
 1. [day02](https://opueco.github.io/rclub-slides/2020ch/day02)
