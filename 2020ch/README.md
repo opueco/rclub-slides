@@ -10,3 +10,5 @@
 1. [day04](https://opueco.github.io/rclub-slides/2020ch/day04)
 1. [day05](https://opueco.github.io/rclub-slides/2020ch/day05)
 1. [day06](https://opueco.github.io/rclub-slides/2020ch/day06)
+1. [day07](https://opueco.github.io/rclub-slides/2020ch/day07)
+1. [day08](https://opueco.github.io/rclub-slides/2020ch/day08)
